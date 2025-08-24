@@ -23,7 +23,7 @@
     const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
     const RESEND_API_KEY = "re_aZXUgXh9_CBra5j8HhfSEJAbwUQsNi4Zu";
-    const UID = "ABC123"; // ← 任意のID（NFCタグごとに変える）
+    const UID = "ABC123";
 
     const client = axios.create({
       baseURL: SUPABASE_URL + "/rest/v1",
@@ -39,60 +39,74 @@
         if (res.data.length === 0) {
           await client.post(`/detergent_usage`, {
             id: UID,
-            email: "rapicak@gmail.com", // ← あなたのメールアドレス
+            email: "rapicak@gmail.com",
           });
           document.getElementById("remaining").textContent = "83";
           document.getElementById("bar").style.width = "100%";
         } else {
           const item = res.data[0];
-          document.getElementById("remaining").textContent = item.remaining_uses;
-          document.getElementById("bar").style.width = ((83 - item.current_uses) / 83 * 100) + "%";
+          const remaining = 83 - item.current_uses; // remaining_uses カラムがないので計算
+          document.getElementById("remaining").textContent = remaining;
+          document.getElementById("bar").style.width = (remaining / 83 * 100) + "%";
         }
       } catch (e) {
-        alert("読み込み失敗");
+        console.error(e);
+        alert("読み込み失敗：" + e.message);
       }
     }
 
     async function useOnce() {
-      const res = await client.get(`/detergent_usage?id=eq.${UID}`);
-      let item = res.data[0];
-      const newUses = (item.current_uses || 0) + 1;
-      const remaining = 83 - newUses;
+      try {
+        const res = await client.get(`/detergent_usage?id=eq.${UID}`);
+        let item = res.data[0];
+        const newUses = (item.current_uses || 0) + 1;
+        const remaining = 83 - newUses;
 
-      await client.patch(`/detergent_usage?id=eq.${UID}`, {
-        current_uses: newUses,
-      });
+        await client.patch(`/detergent_usage?id=eq.${UID}`, {
+          current_uses: newUses,
+        });
 
-      // 通知処理
-      if (remaining <= 41 && !item.notified_half) {
-        await sendEmail("半分", remaining);
-        await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_half: true });
+        if (remaining <= 41 && !item.notified_half) {
+          await sendEmail("半分", remaining);
+          await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_half: true });
+        }
+        if (remaining <= 10 && !item.notified_low) {
+          await sendEmail("残りわずか", remaining);
+          await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_low: true });
+        }
+
+        alert(`使用登録しました。残り${remaining}回`);
+        location.reload();
+      } catch (e) {
+        alert("登録失敗：" + e.message);
       }
-      if (remaining <= 10 && !item.notified_low) {
-        await sendEmail("残りわずか", remaining);
-        await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_low: true });
-      }
-
-      alert(`使用登録しました。残り${remaining}回`);
-      location.reload();
     }
 
     async function sendEmail(type, remaining) {
-      await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${RESEND_API_KEY}`,
-        },
-        body: JSON.stringify({
-          from: "noreply@detergent-tracker.com",
-          to: "rapicak@gmail.com", // ← あなたのメール
-          subject: type === "半分" 
-            ? "洗剤の残量が半分になりました" 
-            : "洗剤の残りが少なくなっています",
-          text: `「部屋干しスーパークリーン」の残りはあと${remaining}回分です。補充をおすすめします。`,
-        }),
-      });
+      try {
+        const response = await fetch("https://api.resend.com/emails", { // ここも修正！
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: "noreply@detergent-tracker.com",
+            to: "rapicak@gmail.com",
+            subject: type === "半分" 
+              ? "洗剤の残量が半分になりました" 
+              : "洗剤の残りが少なくなっています",
+            text: `「部屋干しスーパークリーン」の残りはあと${remaining}回分です。補充をおすすめします。`,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          console.error("Email error:", error);
+        }
+      } catch (e) {
+        console.error("Email send error:", e);
+      }
     }
 
     load();
