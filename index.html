@@ -2,330 +2,505 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Detergent Pal | あなたの洗濯パートナー</title>
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <base target="_top">
+  <title>部屋干しスーパークリーン｜洗剤カウンター</title>
+
+  <!-- Google Fonts: モダンで読みやすいフォント -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;800&family=Roboto:wght@700&display=swap" rel="stylesheet">
-  
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
   <style>
-    /* 🎨 100点デザインシステム: テーマ性と動的変化 */
+    /* ========================================
+       デザインシステム（Modern UI）
+       ======================================== */
+
     :root {
-      /* 基本テーマカラー (Normal State) */
-      --theme-primary: #38bdf8; /* Sky 400 */
-      --theme-primary-dark: #0ea5e9; /* Sky 500 */
-      --theme-secondary: #a78bfa; /* Violet 400 */
-      --theme-bg-start: #e0f2fe; /* Sky 100 */
-      --theme-bg-end: #f5f3ff; /* Violet 50 */
-      --theme-text-primary: #1e293b; /* Slate 800 */
-      --theme-text-secondary: #475569; /* Slate 600 */
-      --theme-card-bg: rgba(255, 255, 255, 0.6);
-      --theme-border: rgba(255, 255, 255, 0.9);
-      
-      /* タイポグラフィ */
-      --font-family-base: 'M PLUS Rounded 1c', sans-serif;
-      --font-family-display: 'Roboto', sans-serif;
-      
-      /* その他 */
-      --border-radius: 1.5rem; /* 24px */
-      --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-      --transition-super-smooth: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-    }
-    
-    /* 🟡 低残量テーマ (Low State) */
-    .is-low {
-      --theme-primary: #facc15; /* Yellow 400 */
-      --theme-primary-dark: #eab308; /* Yellow 500 */
-      --theme-bg-start: #fefce8; /* Yellow 50 */
-      --theme-bg-end: #fffbeb; /* Amber 50 */
+      --primary: #4CAF50;
+      --primary-dark: #388E3C;
+      --primary-light: #C8E6C9;
+      --warning: #FF9800;
+      --error: #F44336;
+      --text-dark: #212121;
+      --text-light: #757575;
+      --bg-light: #f5f5f5;
+      --bg-surface: #ffffff;
+      --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+      --radius-lg: 1rem;
+      --radius-md: 0.5rem;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --spacing-2: 0.5rem;
+      --spacing-4: 1rem;
+      --spacing-6: 1.5rem;
+      --spacing-8: 2rem;
+      --text-xs: 0.75rem;
+      --text-sm: 0.875rem;
+      --text-base: 1rem;
+      --text-lg: 1.25rem;
+      --text-xl: 1.5rem;
+      --text-2xl: 2rem;
+      --text-3xl: 2.5rem;
     }
 
-    /* 🔴 緊急テーマ (Critical State) */
-    .is-critical {
-      --theme-primary: #f87171; /* Red 400 */
-      --theme-primary-dark: #ef4444; /* Red 500 */
-      --theme-bg-start: #fef2f2; /* Red 50 */
-      --theme-bg-end: #fff1f2; /* Rose 50 */
+    /* ダークモード対応 */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --text-dark: #f5f5f5;
+        --text-light: #bdbdbd;
+        --bg-light: #121212;
+        --bg-surface: #1e1e1e;
+        --primary-light: #0a3d0b;
+      }
     }
-    
-    /* --- 基本スタイル --- */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* リセット */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
-      font-family: var(--font-family-base);
-      display: grid;
-      place-items: center;
+      font-family: 'Noto Sans JP', 'Inter', sans-serif;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      line-height: 1.6;
+      padding: var(--spacing-4);
       min-height: 100vh;
-      background: linear-gradient(135deg, var(--theme-bg-start), var(--theme-bg-end));
-      transition: background 0.5s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: background-color 0.3s;
     }
-    
-    /* --- カードデザイン (グラスモーフィズム) --- */
-    .detergent-pal-card {
+
+    .container {
       width: 100%;
-      max-width: 380px;
-      padding: 2rem;
-      background: var(--theme-card-bg);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-radius: var(--border-radius);
-      border: 1px solid var(--theme-border);
-      box-shadow: var(--shadow);
+      max-width: 480px;
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.3s;
+    }
+
+    .container:active {
+      transform: scale(0.98);
+    }
+
+    /* ヘッダー */
+    .header {
+      background: var(--primary);
+      color: white;
+      padding: var(--spacing-6) var(--spacing-6) var(--spacing-4);
       text-align: center;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .header h1 {
+      font-size: var(--text-2xl);
+      font-weight: 700;
+      margin-bottom: var(--spacing-1);
+    }
+
+    .header p {
+      font-size: var(--text-sm);
+      opacity: 0.9;
+    }
+
+    /* メインコンテンツ */
+    .content {
+      padding: var(--spacing-6);
+      text-align: center;
+    }
+
+    /* 残量表示 */
+    .remaining-container {
+      margin-bottom: var(--spacing-6);
+    }
+
+    .remaining-label {
+      font-size: var(--text-lg);
+      color: var(--text-light);
+      margin-bottom: var(--spacing-2);
+    }
+
+    .remaining-value {
+      font-size: var(--text-3xl);
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    /* プログレスバー */
+    .progress-container {
+      background: var(--primary-light);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-2);
+      margin-bottom: var(--spacing-6);
       position: relative;
       overflow: hidden;
-      transition: var(--transition-super-smooth);
-    }
-    
-    /* 💧 波のアニメーション背景 */
-    .wave-bg {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 50%; /* JSで高さを動的に変更 */
-      background: linear-gradient(to top, var(--theme-primary), var(--theme-secondary));
-      opacity: 0.1;
-      border-radius: var(--border-radius);
-      transition: height 1s cubic-bezier(0.22, 1, 0.36, 1), background 0.5s ease;
-      z-index: -1;
-    }
-    .wave-bg::before, .wave-bg::after {
-      content: '';
-      position: absolute;
-      width: 200%;
-      height: 200%;
-      top: -150%;
-      left: 50%;
-      background-color: var(--theme-bg-start);
-      border-radius: 45%;
-      transform: translateX(-50%) rotate(0);
-      animation: wave 12s linear infinite;
-      transition: background-color 0.5s ease;
-    }
-    .wave-bg::after {
-      border-radius: 40%;
-      animation: wave 20s linear infinite;
-      animation-direction: reverse;
-      opacity: 0.7;
-    }
-    @keyframes wave { to { transform: translateX(-50%) rotate(360deg); } }
-
-    /* --- コンテンツ --- */
-    h1 {
-      font-size: 1.5rem;
-      font-weight: 800;
-      color: var(--theme-text-primary);
-    }
-    
-    .status-display {
-      margin: 2rem 0;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
     }
 
-    .remaining-count {
-      font-family: var(--font-family-display);
-      font-size: 5rem; /* 80px */
-      font-weight: 700;
-      color: var(--theme-primary);
-      line-height: 1;
-      transition: color 0.5s ease;
-    }
-    .remaining-label {
-      font-weight: 800;
-      color: var(--theme-text-secondary);
-    }
-
-    /* ✨ ユーザーを魅了するボタン */
-    .use-button {
-      width: 100%;
-      padding: 1rem;
-      border: none;
-      border-radius: 50px;
-      background: linear-gradient(45deg, var(--theme-primary), var(--theme-secondary));
-      color: white;
-      font-family: var(--font-family-base);
-      font-size: 1.125rem;
-      font-weight: 800;
-      cursor: pointer;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-      transition: all 0.2s ease-out;
+    .progress-bar {
+      height: 24px;
+      background: var(--primary);
+      border-radius: var(--radius-md);
+      width: 0%;
+      transition: width 0.6s ease-out, background-color 0.3s;
       position: relative;
-      -webkit-tap-highlight-color: transparent; /* モバイルでのタップ色を消す */
-    }
-    .use-button:hover:not(:disabled) {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    }
-    .use-button:active:not(:disabled) {
-      transform: translateY(1px) scale(0.98);
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .use-button:disabled {
-      filter: grayscale(80%);
-      cursor: not-allowed;
-      opacity: 0.6;
     }
 
-    /* --- アクセシビリティ対応 --- */
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
+    .progress-text {
+      position: absolute;
+      width: 100%;
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+      color: white;
+      font-size: var(--text-sm);
+      font-weight: 600;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    /* ボタン */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--spacing-1);
+      padding: var(--spacing-2) var(--spacing-6);
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: var(--text-lg);
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* 注意表示 */
+    .warning {
+      color: var(--warning);
+      font-weight: 600;
+      margin: var(--spacing-4) 0;
+      font-size: var(--text-lg);
+    }
+
+    .low-usage {
+      color: var(--error);
+      font-weight: 700;
+      font-size: var(--text-xl);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+
+    /* 小文字説明 */
+    .disclaimer {
+      font-size: var(--text-xs);
+      color: var(--text-light);
+      margin-top: var(--spacing-4);
+    }
+
+    /* ローディングステート */
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    /* メッセージフィードバック */
+    .toast {
+      position: fixed;
+      bottom: var(--spacing-6);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--text-dark);
+      color: white;
+      padding: var(--spacing-2) var(--spacing-4);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      box-shadow: var(--shadow-md);
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    /* レスポンシブ */
+    @media (max-width: 480px) {
+      .header h1 {
+        font-size: var(--text-xl);
+      }
+      .remaining-value {
+        font-size: var(--text-2xl);
+      }
+      .btn {
+        font-size: var(--text-base);
+        padding: var(--spacing-2) var(--spacing-4);
       }
     }
   </style>
 </head>
 <body>
 
-  <main>
-    <section class="detergent-pal-card" id="card" aria-labelledby="card-heading">
-      <div class="wave-bg" id="wave"></div>
+  <div class="container" role="main" aria-labelledby="app-title">
+    <!-- ヘッダー -->
+    <header class="header">
+      <h1 id="app-title">部屋干しスーパークリーン</h1>
+      <p>洗剤使用カウンター</p>
+    </header>
 
-      <h1 id="card-heading">部屋干しスーパークリーン</h1>
-      
-      <div class="status-display">
-        <div class="remaining-count" id="remaining-count" aria-live="polite">--</div>
-        <div class="remaining-label">残り回数</div>
+    <!-- メインコンテンツ -->
+    <div class="content">
+      <div class="remaining-container">
+        <p class="remaining-label">残り使用可能回数</p>
+        <p class="remaining-value" id="remaining">読み込み中...</p>
       </div>
-      
-      <button class="use-button" id="use-button" disabled>
-        <span id="button-text">読み込み中...</span>
+
+      <!-- プログレスバー -->
+      <div class="progress-container">
+        <div class="progress-bar" id="bar">
+          <span class="progress-text" id="progressText">0%</span>
+        </div>
+      </div>
+
+      <!-- 使用ボタン -->
+      <button id="useBtn" class="btn" aria-label="洗剤を1回使用済みにする">
+        使用済みにする
       </button>
-    </section>
-  </main>
+
+      <!-- 警告メッセージ -->
+      <p id="warning" class="warning" style="display:none;"></p>
+
+      <!-- 説明 -->
+      <p class="disclaimer">※1回の使用量：22ml</p>
+    </div>
+  </div>
+
+  <!-- フィードバックトースト -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    // ================================
+    // 設定
+    // ================================
+    const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
+    const UID = "ABC123";
+    const USER_EMAIL = "rapicak@gmail.com";
+    const MAX_USES = 83;
 
-      // --- 1. 定数 & 状態管理 ---
-      const TOTAL_USES = 83;
-      const state = {
-        isLoading: true,
-        currentUses: 0,
-        notifiedHalf: false,
-        notifiedLow: false,
-        get remaining() { return TOTAL_USES - this.currentUses; },
-        get percentage() { return (this.remaining / TOTAL_USES) * 100; }
-      };
-      
-      // --- 2. DOM要素 ---
-      const ui = {
-        card: document.getElementById('card'),
-        remainingCount: document.getElementById('remaining-count'),
-        button: document.getElementById('use-button'),
-        buttonText: document.getElementById('button-text'),
-        wave: document.getElementById('wave'),
-      };
-      
-      // --- 3. APIクライアント (変更なし) ---
-      const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";
-      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
-      const UID = "ABC123";
-      const apiClient = axios.create({ /* ...前回のコードと同じ... */ });
-      
-      // --- 4. UI更新モジュール ---
-      const UIModule = {
-        // 数字をアニメーションさせる関数
-        animateCount: (element, target) => {
-          element.style.opacity = 0;
-          element.style.transform = 'translateY(10px)';
-          setTimeout(() => {
-            element.textContent = target;
-            element.style.opacity = 1;
-            element.style.transform = 'translateY(0)';
-          }, 150);
-        },
+    // DOM要素
+    const remainingEl = document.getElementById('remaining');
+    const barEl = document.getElementById('bar');
+    const progressTextEl = document.getElementById('progressText');
+    const useBtn = document.getElementById('useBtn');
+    const warningEl = document.getElementById('warning');
+    const toastEl = document.getElementById('toast');
 
-        // コンテキストに応じたテーマ変更
-        updateTheme: (remaining) => {
-          ui.card.classList.remove('is-low', 'is-critical');
-          if (remaining <= 10) {
-            ui.card.classList.add('is-critical');
-          } else if (remaining <= 41) {
-            ui.card.classList.add('is-low');
-          }
-        },
+    // ================================
+    // ツール関数
+    // ================================
+    const showToast = (message) => {
+      toastEl.textContent = message;
+      toastEl.classList.add('show');
+      setTimeout(() => {
+        toastEl.classList.remove('show');
+      }, 3000);
+    };
 
-        // メインの描画関数
-        render: () => {
-          ui.button.disabled = state.isLoading || state.remaining <= 0;
-          if (state.isLoading) {
-            ui.buttonText.textContent = '読み込み中...';
-          } else if (state.remaining <= 0) {
-            ui.buttonText.textContent = '使い切りました！';
-          } else {
-            ui.buttonText.textContent = '1回使う';
-          }
-          
-          if (!state.isLoading) {
-            UIModule.animateCount(ui.remainingCount, state.remaining);
-            UIModule.updateTheme(state.remaining);
-            ui.wave.style.height = `${Math.max(state.percentage, 5)}%`; // 最低5%は表示
-          }
-        }
-      };
+    const updateUI = (remaining, currentUses) => {
+      const percent = Math.max(0, Math.min(100, (remaining / MAX_USES) * 100));
       
-      // --- 5. アプリケーションロジック ---
-      
-      // ✨ 喜びの演出: コンフェッティ！
-      const triggerConfetti = () => {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
+      remainingEl.textContent = remaining;
+      barEl.style.width = `${percent}%`;
+      progressTextEl.textContent = `${Math.round(percent)}%`;
+
+      // 警告表示
+      if (remaining <= 10) {
+        warningEl.textContent = `⚠️ 残りわずか！${remaining}回`;
+        warningEl.className = 'warning low-usage';
+        warningEl.style.display = 'block';
+      } else if (remaining <= 41) {
+        warningEl.textContent = `💡 残り半分になりました`;
+        warningEl.className = 'warning';
+        warningEl.style.display = 'block';
+      } else {
+        warningEl.style.display = 'none';
+      }
+
+      // ボタン無効化（0以下）
+      if (remaining <= 0) {
+        useBtn.disabled = true;
+        useBtn.textContent = '在庫切れ';
+      }
+    };
+
+    // ================================
+    // API通信（Axios不要 → fetchで代替）
+    // ================================
+    const supabase = {
+      async get() {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/detergent_usage?id=eq.${UID}`, {
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`
+          }
         });
-      };
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || '読み込み失敗');
+        return data;
+      },
+      async insert(initial) {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/detergent_usage`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            id: UID,
+            email: USER_EMAIL,
+            current_uses: 0,
+            notified_half: false,
+            notified_low: false,
+            ...initial
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || '登録失敗');
+        return data;
+      },
+      async update(uses, notified_half = null, notified_low = null) {
+        const body = { current_uses: uses };
+        if (notified_half !== null) body.notified_half = notified_half;
+        if (notified_low !== null) body.notified_low = notified_low;
 
-      const loadInitialData = async () => {
-        state.isLoading = true;
-        UIModule.render();
-        try {
-          const { data } = await apiClient.get(`/detergent_usage?id=eq.${UID}&select=*`);
-          const serverData = data.length > 0 ? data[0] : { current_uses: 0, notified_half: false, notified_low: false };
-          Object.assign(state, serverData);
-        } catch (error) {
-          console.error("読み込み失敗:", error);
-          ui.buttonText.textContent = '読込エラー';
-        } finally {
-          state.isLoading = false;
-          UIModule.render();
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/detergent_usage?id=eq.${UID}`, {
+          method: 'PATCH',
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || '更新失敗');
+        return data;
+      }
+    };
+
+    // ================================
+    // メイン処理
+    // ================================
+    async function load() {
+      try {
+        let data = await supabase.get();
+
+        if (data.length === 0) {
+          await supabase.insert();
+          data = await supabase.get();
         }
-      };
 
-      const handleUseOnce = async () => {
-        if (state.remaining <= 0) return;
-        
-        // 🚀 楽観的UI更新 (Optimistic UI Update)
-        const previousState = { ...state }; // 失敗時に戻すためのバックアップ
-        state.currentUses++;
-        UIModule.render();
-        triggerConfetti(); // UIを即時更新し、アニメーション実行！
+        const item = data[0];
+        const remaining = MAX_USES - item.current_uses;
+        updateUI(remaining, item.current_uses);
+      } catch (e) {
+        remainingEl.textContent = "エラー";
+        showToast("データ読み込みに失敗しました");
+        console.error(e);
+      }
+    }
 
-        try {
-          // バックグラウンドでAPI通信
-          const patchData = { current_uses: state.currentUses };
-          // 通知ロジックもここに追加...
-          await apiClient.patch(`/detergent_usage?id=eq.${UID}`, patchData);
-          // 成功！何もしない
-        } catch (error) {
-          console.error("更新エラー:", error);
-          // 失敗した場合、UIを元に戻す
-          Object.assign(state, previousState);
-          UIModule.render();
-          // ここでエラーのトースト通知を表示
+    async function useOnce() {
+      try {
+        useBtn.disabled = true;
+        useBtn.innerHTML = '<span style="opacity:0.8">処理中...</span>';
+
+        const data = await supabase.get();
+        const item = data[0];
+        const newUses = item.current_uses + 1;
+        const remaining = MAX_USES - newUses;
+
+        // Supabase更新
+        await supabase.update(newUses);
+
+        // メール通知チェック
+        if (remaining <= 41 && !item.notified_half) {
+          await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: "半分", remaining, to: USER_EMAIL })
+          });
+          await supabase.update(newUses, true, item.notified_low);
         }
-      };
 
-      // --- 6. 初期化 ---
-      ui.button.addEventListener('click', handleUseOnce);
-      loadInitialData();
+        if (remaining <= 10 && !item.notified_low) {
+          await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: "残りわずか", remaining, to: USER_EMAIL })
+          });
+          await supabase.update(newUses, item.notified_half, true);
+        }
+
+        // UI更新（リロード不要！）
+        updateUI(remaining, newUses);
+        showToast(`${newUses}回目を登録しました`);
+
+      } catch (e) {
+        showToast("登録に失敗しました");
+        console.error(e);
+      } finally {
+        useBtn.disabled = false;
+        useBtn.textContent = "使用済みにする";
+      }
+    }
+
+    // ================================
+    // イベントリスナー
+    // ================================
+    useBtn.addEventListener('click', useOnce);
+
+    // キーボードサポート
+    useBtn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        useOnce();
+      }
     });
+
+    // 初期読み込み
+    load();
   </script>
+
 </body>
 </html>
