@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>洗剤カウンター</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin: 40px; }
+    .progress { width: 100%; background: #eee; height: 20px; border-radius: 10px; overflow: hidden; }
+    .bar { height: 100%; background: #4CAF50; width: 0%; }
+    button { padding: 15px 30px; font-size: 18px; margin: 20px; }
+  </style>
+</head>
+<body>
+  <h1>部屋干しスーパークリーン</h1>
+  <p>残り: <span id="remaining">読み込み中...</span> 回</p>
+  <div class="progress"><div class="bar" id="bar"></div></div>
+  <button onclick="useOnce()">使用済みにする</button>
+  <p><small>※1回の使用量: 22ml</small></p>
+
+  <script>
+    const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
+    const RESEND_API_KEY = "re_aZXUgXh9_CBra5j8HhfSEJAbwUQsNi4Zu";
+    const UID = "ABC123"; // ← 任意のID（NFCタグごとに変える）
+
+    const client = axios.create({
+      baseURL: SUPABASE_URL + "/rest/v1",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+    });
+
+    async function load() {
+      try {
+        const res = await client.get(`/detergent_usage?id=eq.${UID}`);
+        if (res.data.length === 0) {
+          await client.post(`/detergent_usage`, {
+            id: UID,
+            email: "rapicak@gmail.com", // ← あなたのメールアドレス
+          });
+          document.getElementById("remaining").textContent = "83";
+          document.getElementById("bar").style.width = "100%";
+        } else {
+          const item = res.data[0];
+          document.getElementById("remaining").textContent = item.remaining_uses;
+          document.getElementById("bar").style.width = ((83 - item.current_uses) / 83 * 100) + "%";
+        }
+      } catch (e) {
+        alert("読み込み失敗");
+      }
+    }
+
+    async function useOnce() {
+      const res = await client.get(`/detergent_usage?id=eq.${UID}`);
+      let item = res.data[0];
+      const newUses = (item.current_uses || 0) + 1;
+      const remaining = 83 - newUses;
+
+      await client.patch(`/detergent_usage?id=eq.${UID}`, {
+        current_uses: newUses,
+      });
+
+      // 通知処理
+      if (remaining <= 41 && !item.notified_half) {
+        await sendEmail("半分", remaining);
+        await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_half: true });
+      }
+      if (remaining <= 10 && !item.notified_low) {
+        await sendEmail("残りわずか", remaining);
+        await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_low: true });
+      }
+
+      alert(`使用登録しました。残り${remaining}回`);
+      location.reload();
+    }
+
+    async function sendEmail(type, remaining) {
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: "noreply@detergent-tracker.com",
+          to: "rapicak@gmail.com", // ← あなたのメール
+          subject: type === "半分" 
+            ? "洗剤の残量が半分になりました" 
+            : "洗剤の残りが少なくなっています",
+          text: `「部屋干しスーパークリーン」の残りはあと${remaining}回分です。補充をおすすめします。`,
+        }),
+      });
+    }
+
+    load();
+  </script>
+</body>
+</html>
