@@ -34,16 +34,6 @@
       --border-radius: 1.5rem; /* 24px */
       --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
       --transition-super-smooth: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-      
-      /* トースト通知 */
-      --toast-bg: #1e293b;
-      --toast-color: white;
-      --spacing-2: 0.5rem;
-      --spacing-4: 1rem;
-      --spacing-6: 1.5rem;
-      --radius-md: 0.5rem;
-      --text-sm: 0.875rem;
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
     
     /* 🟡 低残量テーマ (Low State) */
@@ -60,18 +50,6 @@
       --theme-primary-dark: #ef4444; /* Red 500 */
       --theme-bg-start: #fef2f2; /* Red 50 */
       --theme-bg-end: #fff1f2; /* Rose 50 */
-    }
-    
-    /* ダークモード対応 */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --theme-text-primary: #f1f5f9;
-        --theme-text-secondary: #cbd5e1;
-        --theme-card-bg: rgba(30, 41, 59, 0.8);
-        --theme-border: rgba(71, 85, 105, 0.5);
-        --toast-bg: #f1f5f9;
-        --toast-color: #1e293b;
-      }
     }
     
     /* --- 基本スタイル --- */
@@ -192,27 +170,6 @@
       opacity: 0.6;
     }
 
-    /* --- トースト通知 --- */
-    .toast {
-      position: fixed;
-      bottom: var(--spacing-6);
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--toast-bg);
-      color: var(--toast-color);
-      padding: var(--spacing-2) var(--spacing-4);
-      border-radius: var(--radius-md);
-      font-size: var(--text-sm);
-      box-shadow: var(--shadow-md);
-      opacity: 0;
-      transition: opacity 0.3s;
-      z-index: 1000;
-    }
-    
-    .toast.show {
-      opacity: 1;
-    }
-
     /* --- アクセシビリティ対応 --- */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -243,9 +200,6 @@
     </section>
   </main>
 
-  <!-- トースト通知 -->
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
   <script>
     document.addEventListener('DOMContentLoaded', () => {
 
@@ -267,7 +221,6 @@
         button: document.getElementById('use-button'),
         buttonText: document.getElementById('button-text'),
         wave: document.getElementById('wave'),
-        toast: document.getElementById('toast')
       };
       
       // --- 3. APIクライアント ---
@@ -306,16 +259,6 @@
           } else if (remaining <= 41) {
             ui.card.classList.add('is-low');
           }
-        },
-
-        // トースト通知を表示
-        showToast: (message, duration = 3000) => {
-          ui.toast.textContent = message;
-          ui.toast.classList.add('show');
-          
-          setTimeout(() => {
-            ui.toast.classList.remove('show');
-          }, duration);
         },
 
         // メインの描画関数
@@ -357,15 +300,9 @@
           state.currentUses = serverData.current_uses || 0;
           state.notifiedHalf = serverData.notified_half || false;
           state.notifiedLow = serverData.notified_low || false;
-          
-          // 初期読み込み時のトースト通知
-          if (!state.isLoading) {
-            UIModule.showToast(`${state.remaining}回残っています`);
-          }
         } catch (error) {
           console.error("読み込み失敗:", error);
           ui.buttonText.textContent = '読込エラー';
-          UIModule.showToast('データの読み込みに失敗しました', 5000);
         } finally {
           state.isLoading = false;
           UIModule.render();
@@ -393,18 +330,15 @@
             updated_at: new Date().toISOString()
           };
           
-          await apiClient.put(`/rest/v1/detergent_usage?uid=eq.${UID}`, patchData);
-          
-          // 成功時のトースト通知
-          UIModule.showToast(`${state.remaining}回残っています`);
+          const { data } = await apiClient.put(`/rest/v1/detergent_usage?uid=eq.${UID}`, patchData);
           
           // 通知ロジック
           if (state.remaining <= 10 && !state.notifiedLow) {
-            UIModule.showToast('⚠️ 残りわずかです！もうすぐ使い切りです！', 5000);
+            alert("残りわずかです！もうすぐ使い切りです！");
             state.notifiedLow = true;
             await apiClient.patch(`/rest/v1/detergent_usage?uid=eq.${UID}`, { notified_low: true });
           } else if (state.remaining <= 41 && !state.notifiedHalf) {
-            UIModule.showToast('🔔 洗剤の残量が半分になりました！', 4000);
+            alert("洗剤の残量が半分になりました！");
             state.notifiedHalf = true;
             await apiClient.patch(`/rest/v1/detergent_usage?uid=eq.${UID}`, { notified_half: true });
           }
@@ -415,7 +349,7 @@
           state.notifiedHalf = previousState.notifiedHalf;
           state.notifiedLow = previousState.notifiedLow;
           UIModule.render();
-          UIModule.showToast('更新に失敗しました。もう一度お試しください。', 5000);
+          alert("更新に失敗しました。もう一度お試しください。");
         }
       };
 
