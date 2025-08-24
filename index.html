@@ -38,6 +38,10 @@
       --text-xl: 1.5rem;
       --text-2xl: 2rem;
       --text-3xl: 2.5rem;
+
+      /* トースト用の変数 */
+      --toast-bg: var(--text-dark);
+      --toast-text: #ffffff;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -47,6 +51,10 @@
         --bg-light: #121212;
         --bg-surface: #1e1e1e;
         --primary-light: #0a3d0b;
+
+        /* ダークモード用トースト */
+        --toast-bg: #333;
+        --toast-text: #ffffff;
       }
     }
 
@@ -87,7 +95,7 @@
     .header h1 {
       font-size: var(--text-2xl);
       font-weight: 700;
-      margin-bottom: var(--spacing-1);
+      margin-bottom: var(--spacing-2);
     }
 
     .header p {
@@ -163,7 +171,11 @@
       box-shadow: var(--shadow-sm);
     }
 
-    .btn:hover { background: var(--primary-dark); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .btn:hover { 
+      background: var(--primary-dark); 
+      transform: translateY(-2px); 
+      box-shadow: var(--shadow-md); 
+    }
     .btn:active { transform: translateY(0); }
     .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
@@ -198,8 +210,8 @@
       bottom: var(--spacing-6);
       left: 50%;
       transform: translateX(-50%);
-      background: var(--text-dark);
-      color: white;
+      background: var(--toast-bg);
+      color: var(--toast-text);
       padding: var(--spacing-2) var(--spacing-4);
       border-radius: var(--radius-md);
       font-size: var(--text-sm);
@@ -288,11 +300,11 @@
         warningEl.textContent = `⚠️ 残りわずか！${remaining}回`;
         warningEl.className = 'warning low-usage';
         warningEl.style.display = 'block';
-      } else if (remaining <= 41) {
+      } else if (remaining <= 41 && !warningEl.textContent.includes('半分')) {
         warningEl.textContent = `💡 残り半分になりました`;
         warningEl.className = 'warning';
         warningEl.style.display = 'block';
-      } else {
+      } else if (remaining > 41) {
         warningEl.style.display = 'none';
       }
 
@@ -313,7 +325,7 @@
             Authorization: `Bearer ${SUPABASE_KEY}`
           }
         });
-        if (!res.ok) throw new Error(`読み込み失敗: ${res.status}`);
+        if (!res.ok && res.status !== 404) throw new Error(`読み込み失敗: ${res.status}`);
         const text = await res.text();
         return text ? JSON.parse(text) : [];
       },
@@ -354,9 +366,8 @@
           body: JSON.stringify(body)
         });
 
-        if (res.status === 204) return { success: true }; // No Contentも成功とみなす
+        if (res.status === 204) return { success: true };
         if (!res.ok) throw new Error(`更新失敗: ${res.status}`);
-
         const text = await res.text();
         return text ? JSON.parse(text) : { success: true };
       }
@@ -395,27 +406,23 @@
         useBtn.textContent = "処理中...";
 
         const data = await supabase.get();
+        if (data.length === 0) throw new Error("データがありません");
+
         const item = data[0];
         const newUses = item.current_uses + 1;
         const remaining = MAX_USES - newUses;
 
         await supabase.update(newUses);
 
+        // メール通知（必要なら）
         if (remaining <= 41 && !item.notified_half) {
-          await fetch('/api/send-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: "半分", remaining, to: USER_EMAIL })
-          });
+          // ※ 実際には /api/send-email は別バックエンドが必要
+          console.log("半分通知");
           await supabase.update(newUses, true, item.notified_low);
         }
 
         if (remaining <= 10 && !item.notified_low) {
-          await fetch('/api/send-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: "残りわずか", remaining, to: USER_EMAIL })
-          });
+          console.log("残りわずか通知");
           await supabase.update(newUses, item.notified_half, true);
         }
 
@@ -423,7 +430,7 @@
         showToast(`${remaining}回残っています`);
 
       } catch (e) {
-        showToast("登録失敗");
+        showToast("更新失敗");
         console.error(e);
       } finally {
         useBtn.disabled = false;
