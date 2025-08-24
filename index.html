@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -6,6 +7,7 @@
   <base target="_top">
   <title>部屋干しスーパークリーン｜洗剤カウンター</title>
 
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
@@ -38,6 +40,7 @@
       --text-2xl: 2rem;
       --text-3xl: 2.5rem;
 
+      /* トースト用の変数 */
       --toast-bg: var(--text-dark);
       --toast-text: #ffffff;
     }
@@ -49,6 +52,8 @@
         --bg-light: #121212;
         --bg-surface: #1e1e1e;
         --primary-light: #0a3d0b;
+
+        /* ダークモード用トースト */
         --toast-bg: #333;
         --toast-text: #ffffff;
       }
@@ -75,7 +80,10 @@
       border-radius: var(--radius-lg);
       box-shadow: var(--shadow-md);
       overflow: hidden;
+      transition: transform 0.2s;
     }
+
+    .container:active { transform: scale(0.98); }
 
     .header {
       background: var(--primary);
@@ -153,15 +161,24 @@
       align-items: center;
       gap: var(--spacing-1);
       padding: var(--spacing-2) var(--spacing-6);
-      background: #ccc;
-      color: #666;
+      background: var(--primary);
+      color: white;
       border: none;
       border-radius: var(--radius-md);
-      font-size: var(--text-base);
+      font-size: var(--text-lg);
       font-weight: 600;
-      cursor: not-allowed;
-      box-shadow: none;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: var(--shadow-sm);
     }
+
+    .btn:hover { 
+      background: var(--primary-dark); 
+      transform: translateY(-2px); 
+      box-shadow: var(--shadow-md); 
+    }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
     .warning {
       color: var(--warning);
@@ -208,6 +225,12 @@
     .toast.show {
       opacity: 1;
     }
+
+    @media (max-width: 480px) {
+      .header h1 { font-size: var(--text-xl); }
+      .remaining-value { font-size: var(--text-2xl); }
+      .btn { font-size: var(--text-base); padding: var(--spacing-2) var(--spacing-4); }
+    }
   </style>
 </head>
 <body>
@@ -230,12 +253,12 @@
         </div>
       </div>
 
-      <button class="btn" disabled>
-        毎回のアクセスでは自動カウント
+      <button id="useBtn" class="btn" aria-label="洗剤を1回使用済みにする">
+        使用済みにする
       </button>
 
       <p id="warning" class="warning" style="display:none;"></p>
-      <p class="disclaimer">※1回の使用量：22ml（1日1回までカウント）</p>
+      <p class="disclaimer">※1回の使用量：22ml</p>
     </div>
   </div>
 
@@ -243,7 +266,7 @@
 
   <script>
     // ================================
-    // 設定
+    // 設定（環境に応じて変更）
     // ================================
     const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
@@ -255,16 +278,20 @@
     const remainingEl = document.getElementById('remaining');
     const barEl = document.getElementById('bar');
     const progressTextEl = document.getElementById('progressText');
+    const useBtn = document.getElementById('useBtn');
     const warningEl = document.getElementById('warning');
     const toastEl = document.getElementById('toast');
 
+    // ================================
+    // ツール関数
+    // ================================
     const showToast = (message) => {
       toastEl.textContent = message;
       toastEl.classList.add('show');
       setTimeout(() => toastEl.classList.remove('show'), 3000);
     };
 
-    const updateUI = (remaining) => {
+    const updateUI = (remaining, currentUses) => {
       const percent = Math.max(0, Math.min(100, (remaining / MAX_USES) * 100));
       remainingEl.textContent = remaining;
       barEl.style.width = `${percent}%`;
@@ -274,15 +301,23 @@
         warningEl.textContent = `⚠️ 残りわずか！${remaining}回`;
         warningEl.className = 'warning low-usage';
         warningEl.style.display = 'block';
-      } else if (remaining <= 41) {
+      } else if (remaining <= 41 && !warningEl.textContent.includes('半分')) {
         warningEl.textContent = `💡 残り半分になりました`;
         warningEl.className = 'warning';
         warningEl.style.display = 'block';
-      } else {
+      } else if (remaining > 41) {
         warningEl.style.display = 'none';
+      }
+
+      if (remaining <= 0) {
+        useBtn.disabled = true;
+        useBtn.textContent = '在庫切れ';
       }
     };
 
+    // ================================
+    // Supabase APIラッパー（204対応）
+    // ================================
     const supabase = {
       async get() {
         const res = await fetch(`${SUPABASE_URL}/rest/v1/detergent_usage?id=eq.${UID}`, {
@@ -308,7 +343,6 @@
             id: UID,
             email: USER_EMAIL,
             current_uses: 0,
-            last_used: null,
             notified_half: false,
             notified_low: false
           })
@@ -318,10 +352,10 @@
         return text ? JSON.parse(text) : { success: true };
       },
 
-      async update(uses, lastUsed, notifiedHalf = null, notifiedLow = null) {
-        const body = { current_uses: uses, last_used: lastUsed };
-        if (notifiedHalf !== null) body.notified_half = notifiedHalf;
-        if (notifiedLow !== null) body.notified_low = notifiedLow;
+      async update(uses, notified_half = null, notified_low = null) {
+        const body = { current_uses: uses };
+        if (notified_half !== null) body.notified_half = notified_half;
+        if (notified_low !== null) body.notified_low = notified_low;
 
         const res = await fetch(`${SUPABASE_URL}/rest/v1/detergent_usage?id=eq.${UID}`, {
           method: 'PATCH',
@@ -333,28 +367,19 @@
           body: JSON.stringify(body)
         });
 
-        if (res.status === 204 || res.ok) return { success: true };
-        throw new Error(`更新失敗: ${res.status}`);
+        if (res.status === 204) return { success: true };
+        if (!res.ok) throw new Error(`更新失敗: ${res.status}`);
+        const text = await res.text();
+        return text ? JSON.parse(text) : { success: true };
       }
     };
 
     // ================================
-    // 日付比較ユーティリティ
+    // メイン処理
     // ================================
-    const isSameDay = (d1, d2) => {
-      return d1.getFullYear() === d2.getFullYear() &&
-             d1.getMonth() === d2.getMonth() &&
-             d1.getDate() === d2.getDate();
-    };
-
-    // ================================
-    // 初期化（ページ読み込み時）
-    // ================================
-    async function init() {
+    async function load() {
       try {
         let data = await supabase.get();
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
 
         if (data.length === 0) {
           await supabase.insert();
@@ -362,36 +387,8 @@
         }
 
         const item = data[0];
-        let { current_uses, last_used, notified_half, notified_low } = item;
-
-        // 前回使用日を日付型に変換
-        const lastUsedDate = last_used ? new Date(last_used) : null;
-
-        let usedToday = false;
-        if (lastUsedDate) {
-          lastUsedDate.setHours(0, 0, 0, 0);
-          usedToday = isSameDay(lastUsedDate, today);
-        }
-
-        let newUses = current_uses;
-        if (!usedToday && newUses < MAX_USES) {
-          newUses += 1;
-          await supabase.update(newUses, today.toISOString());
-
-          // 通知処理（必要なら）
-          if (newUses === 42 && !notified_half) {
-            await supabase.update(newUses, today.toISOString(), true, notified_low);
-          }
-          if (newUses >= 73 && !notified_low) {
-            await supabase.update(newUses, today.toISOString(), notified_half, true);
-          }
-
-          showToast(`自動で1回使用済みにしました（残り${MAX_USES - newUses}回）`);
-        } else if (usedToday) {
-          showToast(`本日は既に使用済みです（残り${MAX_USES - current_uses}回）`);
-        }
-
-        updateUI(MAX_USES - newUses);
+        const remaining = MAX_USES - item.current_uses;
+        updateUI(remaining, item.current_uses);
       } catch (e) {
         remainingEl.textContent = "エラー";
         showToast("データ読み込み失敗");
@@ -399,8 +396,62 @@
       }
     }
 
-    // 初期化実行
-    init();
+    async function useOnce() {
+      if (!navigator.onLine) {
+        showToast("オフラインです");
+        return;
+      }
+
+      try {
+        useBtn.disabled = true;
+        useBtn.textContent = "処理中...";
+
+        const data = await supabase.get();
+        if (data.length === 0) throw new Error("データがありません");
+
+        const item = data[0];
+        const newUses = item.current_uses + 1;
+        const remaining = MAX_USES - newUses;
+
+        await supabase.update(newUses);
+
+        // メール通知（必要なら）
+        if (remaining <= 41 && !item.notified_half) {
+          // ※ 実際には /api/send-email は別バックエンドが必要
+          console.log("半分通知");
+          await supabase.update(newUses, true, item.notified_low);
+        }
+
+        if (remaining <= 10 && !item.notified_low) {
+          console.log("残りわずか通知");
+          await supabase.update(newUses, item.notified_half, true);
+        }
+
+        updateUI(remaining, newUses);
+        showToast(`${remaining}回残っています`);
+
+      } catch (e) {
+        showToast("更新失敗");
+        console.error(e);
+      } finally {
+        useBtn.disabled = false;
+        useBtn.textContent = "使用済みにする";
+      }
+    }
+
+    // ================================
+    // イベント登録
+    // ================================
+    useBtn.addEventListener('click', useOnce);
+    useBtn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        useOnce();
+      }
+    });
+
+    // 初期読み込み
+    load();
   </script>
 </body>
 </html>
