@@ -1,473 +1,101 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>洗剤ストックマネージャー</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #0ea5e9;
-            --primary-dark: #0284c7;
-            --background: #ffffff;
-            --text: #333333;
-            --border: #e0e0e0;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --error: #ef4444;
-            
-            --font-size-base: 1rem;
-            --font-size-lg: 1.25rem;
-            --font-size-xl: 1.5rem;
-            
-            --space-2: 0.5rem;
-            --space-4: 1rem;
-            --space-6: 1.5rem;
-            
-            --border-radius: 0.25rem;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        html, body {
-            height: 100%;
-            overflow: hidden;
-        }
-        
-        body {
-            font-family: 'Noto Sans JP', sans-serif;
-            background-color: #f5f5f5;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .detergent-manager {
-            background: var(--background);
-            border-radius: var(--border-radius);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 400px;
-            overflow: hidden;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .detergent-manager__header {
-            background-color: var(--primary);
-            color: white;
-            padding: var(--space-6);
-            text-align: center;
-            flex-shrink: 0;
-        }
-        
-        .detergent-manager__title {
-            font-size: var(--font-size-lg);
-            font-weight: 500;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-        
-        .detergent-manager__subtitle {
-            font-size: 0.875rem;
-            opacity: 0.9;
-            margin: 0.25rem 0 0;
-        }
-        
-        .detergent-manager__content {
-            padding: var(--space-6);
-            flex: 1;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .detergent-manager__stats {
-            text-align: center;
-            margin-bottom: var(--space-6);
-        }
-        
-        .detergent-manager__remaining {
-            font-size: var(--font-size-xl);
-            font-weight: bold;
-            color: var(--primary-dark);
-            margin-bottom: 0.25rem;
-        }
-        
-        .detergent-manager__remaining-label {
-            font-size: var(--font-size-base);
-            color: #666;
-            margin: 0;
-        }
-        
-        .detergent-manager__usage-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: var(--space-4);
-            margin: var(--space-4) 0;
-        }
-        
-        .detergent-manager__info-item {
-            text-align: center;
-            padding: 0.5rem;
-            background: #f9f9f9;
-            border-radius: var(--border-radius);
-        }
-        
-        .detergent-manager__info-value {
-            font-size: var(--font-size-base);
-            font-weight: 500;
-            color: #333;
-            margin: 0;
-        }
-        
-        .detergent-manager__info-label {
-            font-size: 0.75rem;
-            color: #777;
-            margin: 0.25rem 0 0;
-        }
-        
-        .detergent-manager__progress {
-            margin-bottom: var(--space-6);
-        }
-        
-        .detergent-manager__progress-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.25rem;
-            font-size: 0.875rem;
-            color: #666;
-        }
-        
-        .detergent-manager__progress-bar {
-            width: 100%;
-            height: 8px;
-            background: var(--border);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        
-        .detergent-manager__progress-fill {
-            height: 100%;
-            background: var(--primary);
-            border-radius: 4px;
-            width: 0%;
-        }
-        
-        .detergent-manager__progress-fill--warning {
-            background: var(--warning);
-        }
-        
-        .detergent-manager__progress-fill--danger {
-            background: var(--error);
-        }
-        
-        .detergent-manager__action {
-            margin-bottom: var(--space-6);
-            flex-shrink: 0;
-        }
-        
-        .detergent-manager__button {
-            width: 100%;
-            padding: 0.75rem;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--border-radius);
-            font-size: var(--font-size-base);
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        
-        .detergent-manager__button:hover:not(:disabled) {
-            background: var(--primary-dark);
-        }
-        
-        .detergent-manager__button:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
-        }
-        
-        .detergent-manager__footer {
-            padding: var(--space-2) var(--space-6) var(--space-4);
-            text-align: center;
-            background: #f9f9f9;
-            border-top: 1px solid var(--border);
-            font-size: 0.875rem;
-            color: #777;
-            flex-shrink: 0;
-        }
-        
-        .spinner {
-            display: none;
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .toast {
-            position: fixed;
-            bottom: 1rem;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--success);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: var(--border-radius);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            z-index: 1000;
-            display: none;
-        }
-        
-        /* スクロールバーの非表示（必要に応じて） */
-        .detergent-manager__content::-webkit-scrollbar {
-            display: none;
-        }
-        
-        .detergent-manager__content {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>洗剤カウンター</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin: 40px; }
+    .progress { width: 100%; background: #eee; height: 20px; border-radius: 10px; overflow: hidden; }
+    .bar { height: 100%; background: #4CAF50; width: 0%; }
+    button { padding: 15px 30px; font-size: 18px; margin: 20px; }
+  </style>
 </head>
 <body>
-    <main>
-        <article class="detergent-manager" id="detergentManager">
-            <div id="loadingState" style="padding: 2rem; text-align: center; display: none;">
-                <p>データを読み込み中...</p>
-            </div>
-            
-            <div id="mainContent">
-                <header class="detergent-manager__header">
-                    <h1 class="detergent-manager__title" id="appTitle">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0L12 2.69z"></path>
-                        </svg>
-                        部屋干しスーパークリーン
-                    </h1>
-                    <p class="detergent-manager__subtitle">洗剤ストックマネージャー</p>
-                </header>
-                <div class="detergent-manager__content">
-                    <div class="detergent-manager__stats">
-                        <div class="detergent-manager__remaining" id="remainingCount">0</div>
-                        <p class="detergent-manager__remaining-label" id="remainingLabel">回分残っています</p>
-                    </div>
-                    <div class="detergent-manager__usage-info">
-                        <div class="detergent-manager__info-item">
-                            <p class="detergent-manager__info-value" id="usedCount">0</p>
-                            <p class="detergent-manager__info-label">使用済み</p>
-                        </div>
-                        <div class="detergent-manager__info-item">
-                            <p class="detergent-manager__info-value" id="totalCount">83</p>
-                            <p class="detergent-manager__info-label">総容量</p>
-                        </div>
-                    </div>
-                    <div class="detergent-manager__progress">
-                        <div class="detergent-manager__progress-label">
-                            <span>使用状況</span>
-                            <span id="progressPercentage">0%</span>
-                        </div>
-                        <div class="detergent-manager__progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="83" aria-valuenow="83">
-                            <div class="detergent-manager__progress-fill" id="progressFill"></div>
-                        </div>
-                    </div>
-                    <div class="detergent-manager__action">
-                        <button class="detergent-manager__button" id="useButton">
-                            <span id="buttonText">1回分使用する</span>
-                            <span class="spinner" id="buttonSpinner"></span>
-                        </button>
-                    </div>
-                </div>
-                <footer class="detergent-manager__footer">
-                    1回の標準使用量: 22ml
-                </footer>
-            </div>
-        </article>
-    </main>
-    <div class="toast" id="toast">操作が完了しました</div>
-    <script>
-        const CONFIG = {
-            SUPABASE_URL: "https://vnzyqgrkjkeiwahainnc.supabase.co",
-            SUPABASE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg",
-            UID: "ABC123",
-            USER_EMAIL: "rapicak@gmail.com",
-            TOTAL_USES: 83
-        };
-        
-        const elements = {
-            loadingState: document.getElementById('loadingState'),
-            mainContent: document.getElementById('mainContent'),
-            remainingCount: document.getElementById('remainingCount'),
-            usedCount: document.getElementById('usedCount'),
-            totalCount: document.getElementById('totalCount'),
-            progressFill: document.getElementById('progressFill'),
-            progressPercentage: document.getElementById('progressPercentage'),
-            progressBar: document.querySelector('.detergent-manager__progress-bar'),
-            useButton: document.getElementById('useButton'),
-            buttonText: document.getElementById('buttonText'),
-            buttonSpinner: document.getElementById('buttonSpinner'),
-            toast: document.getElementById('toast')
-        };
-        
-        class APIClient {
-            constructor() {
-                this.client = axios.create({
-                    baseURL: `${CONFIG.SUPABASE_URL}/rest/v1`,
-                    headers: {
-                        apikey: CONFIG.SUPABASE_KEY,
-                        Authorization: `Bearer ${CONFIG.SUPABASE_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    timeout: 5000
-                });
-            }
-            
-            async getUserData() {
-                try {
-                    const { data } = await this.client.get(`/detergent_usage?id=eq.${CONFIG.UID}`);
-                    return data[0] || null;
-                } catch (error) {
-                    throw new Error('データの取得に失敗しました');
-                }
-            }
-            
-            async createUser() {
-                try {
-                    const userData = {
-                        id: CONFIG.UID,
-                        email: CONFIG.USER_EMAIL,
-                        current_uses: 0
-                    };
-                    await this.client.post('/detergent_usage', userData);
-                    return userData;
-                } catch (error) {
-                    throw new Error('ユーザーデータの作成に失敗しました');
-                }
-            }
-            
-            async updateUsage(currentUses) {
-                try {
-                    await this.client.patch(`/detergent_usage?id=eq.${CONFIG.UID}`, {
-                        current_uses: currentUses
-                    });
-                } catch (error) {
-                    throw new Error('使用記録の更新に失敗しました');
-                }
-            }
+  <h1>部屋干しスーパークリーン</h1>
+  <p>残り: <span id="remaining">読み込み中...</span> 回</p>
+  <div class="progress"><div class="bar" id="bar"></div></div>
+  <button onclick="useOnce()">使用済みにする</button>
+  <p><small>※1回の使用量: 22ml</small></p>
+
+  <script>
+    const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
+    const UID = "ABC123";
+    const USER_EMAIL = "rapicak@gmail.com";
+
+    const client = axios.create({
+      baseURL: SUPABASE_URL + "/rest/v1",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+    });
+
+    async function load() {
+      try {
+        const res = await client.get(`/detergent_usage?id=eq.${UID}`);
+        if (res.data.length === 0) {
+          await client.post(`/detergent_usage`, { id: UID, email: USER_EMAIL });
+          document.getElementById("remaining").textContent = "83";
+          document.getElementById("bar").style.width = "100%";
+        } else {
+          const item = res.data[0];
+          const remaining = 83 - item.current_uses;
+          document.getElementById("remaining").textContent = remaining;
+          document.getElementById("bar").style.width = (remaining / 83 * 100) + "%";
         }
-        
-        class UIManager {
-            constructor() {
-                this.showLoading = () => {
-                    elements.loadingState.style.display = 'block';
-                    elements.mainContent.style.display = 'none';
-                };
-                
-                this.hideLoading = () => {
-                    elements.loadingState.style.display = 'none';
-                    elements.mainContent.style.display = 'block';
-                };
-                
-                this.updateDisplay = (currentUses) => {
-                    const remaining = CONFIG.TOTAL_USES - currentUses;
-                    const percentage = Math.max(0, Math.min(100, (remaining / CONFIG.TOTAL_USES) * 100));
-                    
-                    elements.remainingCount.textContent = remaining;
-                    elements.usedCount.textContent = currentUses;
-                    
-                    elements.progressFill.style.width = `${percentage}%`;
-                    elements.progressPercentage.textContent = `${Math.round(percentage)}%`;
-                    
-                    elements.progressFill.className = 'detergent-manager__progress-fill';
-                    if (remaining <= 10) {
-                        elements.progressFill.classList.add('detergent-manager__progress-fill--danger');
-                    } else if (remaining <= CONFIG.TOTAL_USES / 2) {
-                        elements.progressFill.classList.add('detergent-manager__progress-fill--warning');
-                    }
-                    
-                    elements.useButton.disabled = remaining <= 0;
-                    elements.buttonText.textContent = remaining <= 0 ? '使い切りました' : '1回分使用する';
-                };
-                
-                this.showToast = (message) => {
-                    const toast = elements.toast;
-                    toast.textContent = message;
-                    toast.style.display = 'block';
-                    
-                    setTimeout(() => {
-                        toast.style.display = 'none';
-                    }, 3000);
-                };
-            }
+      } catch (e) {
+        alert("読み込み失敗: " + e.message);
+      }
+    }
+
+    async function useOnce() {
+      try {
+        const res = await client.get(`/detergent_usage?id=eq.${UID}`);
+        const item = res.data[0];
+        const newUses = item.current_uses + 1;
+        const remaining = 83 - newUses;
+
+        await client.patch(`/detergent_usage?id=eq.${UID}`, { current_uses: newUses });
+
+        // ✅ ブラウザから直接fetchしない！
+        // 代わりに、自分のVercelのAPIを呼ぶ
+        if (remaining <= 41 && !item.notified_half) {
+          await fetch(`/api/send-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "半分",
+              remaining,
+              to: USER_EMAIL
+            })
+          });
+          await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_half: true });
         }
-        
-        class DetergentStockManager {
-            constructor() {
-                this.currentUses = 0;
-                this.apiClient = new APIClient();
-                this.uiManager = new UIManager();
-                
-                this.init();
-            }
-            
-            async init() {
-                try {
-                    this.uiManager.showLoading();
-                    let userData = await this.apiClient.getUserData();
-                    
-                    if (!userData) {
-                        userData = await this.apiClient.createUser();
-                        this.uiManager.showToast('新しいアカウントを作成しました');
-                    }
-                    
-                    this.currentUses = userData.current_uses || 0;
-                    this.uiManager.updateDisplay(this.currentUses);
-                    this.uiManager.hideLoading();
-                    
-                    elements.useButton.addEventListener('click', () => this.useOnce());
-                } catch (error) {
-                    this.uiManager.hideLoading();
-                    alert(error.message);
-                }
-            }
-            
-            async useOnce() {
-                if (elements.useButton.disabled) return;
-                
-                const previousUses = this.currentUses;
-                this.currentUses++;
-                this.uiManager.updateDisplay(this.currentUses);
-                
-                try {
-                    await this.apiClient.updateUsage(this.currentUses);
-                    this.uiManager.showToast('使用記録を保存しました');
-                } catch (error) {
-                    this.currentUses = previousUses;
-                    this.uiManager.updateDisplay(this.currentUses);
-                    alert(error.message);
-                }
-            }
+
+        if (remaining <= 10 && !item.notified_low) {
+          await fetch(`/api/send-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "残りわずか",
+              remaining,
+              to: USER_EMAIL
+            })
+          });
+          await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_low: true });
         }
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            window.app = new DetergentStockManager();
-        });
-    </script>
+
+        alert(`使用登録しました。残り${remaining}回`);
+        location.reload();
+      } catch (e) {
+        alert("エラー: " + e.message);
+      }
+    }
+
+    load();
+  </script>
 </body>
 </html>
