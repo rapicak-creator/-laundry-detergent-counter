@@ -30,6 +30,7 @@
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
     const UID = "ABC123";
     const USER_EMAIL = "rapicak@gmail.com";
+    const MAX_USES_PER_DAY = 3; // 1日あたりの最大使用回数
 
     const client = axios.create({
       baseURL: SUPABASE_URL + "/rest/v1",
@@ -59,6 +60,33 @@
       }
     }
 
+    // 今日の使用回数を取得
+    function getTodayUses() {
+      const today = new Date().toISOString().split('T')[0];
+      const usageData = JSON.parse(localStorage.getItem("dailyUsage") || "{}");
+      return usageData[today] || 0;
+    }
+
+    // 今日の使用回数を更新
+    function updateTodayUses() {
+      const today = new Date().toISOString().split('T')[0];
+      const usageData = JSON.parse(localStorage.getItem("dailyUsage") || "{}");
+      usageData[today] = (usageData[today] || 0) + 1;
+      localStorage.setItem("dailyUsage", JSON.stringify(usageData));
+      return usageData[today];
+    }
+
+    // 今日の使用回数をリセット（ midnight にリセットするためのチェック）
+    function checkAndResetDailyUsage() {
+      const lastReset = localStorage.getItem("lastResetDate");
+      const today = new Date().toISOString().split('T')[0];
+      
+      if (lastReset !== today) {
+        localStorage.setItem("lastResetDate", today);
+        // 昨日のデータを保持する必要がある場合はここで処理
+      }
+    }
+
     // 初期読み込み
     async function load() {
       try {
@@ -82,13 +110,13 @@
       }
     }
 
-    // 今日初めてのアクセスならカウントダウン
-    async function autoUseIfNewDay() {
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-      const lastUsed = localStorage.getItem("lastUsedDate");
-
-      if (lastUsed !== today) {
-        // 今日はまだ使用していない → 使用処理
+    // 今日の制限内であればカウントダウン
+    async function autoUseIfWithinLimit() {
+      checkAndResetDailyUsage(); // 日付変更チェック
+      const todayUses = getTodayUses();
+      
+      if (todayUses < MAX_USES_PER_DAY) {
+        // 今日の使用回数が上限未満 → 使用処理
         try {
           const res = await client.get(`/detergent_usage?id=eq.${UID}`);
           let item;
@@ -110,7 +138,7 @@
           const remaining = TOTAL - newUses;
 
           await client.patch(`/detergent_usage?id=eq.${UID}`, { current_uses: newUses });
-          localStorage.setItem("lastUsedDate", today); // 今日使ったことを記録
+          updateTodayUses(); // 今日の使用回数を更新
 
           updateUI(remaining);
           await logUse();
@@ -141,12 +169,25 @@
             }
           }
 
+          // 使用可能回数の表示更新
+          const remainingTodayUses = MAX_USES_PER_DAY - getTodayUses();
+          if (remainingTodayUses > 0) {
+            showMessage(`本日あと ${remainingTodayUses} 回 使用可能です。残り ${remaining} 回分。`);
+          } else {
+            showMessage(`本日の使用回数上限に達しました。残り ${remaining} 回分。`, true);
+          }
+
         } catch (e) {
           showMessage("カウントダウンに失敗しました。", true);
         }
       } else {
-        // 今日はすでに使っている → 通常の読み込みだけ
-        load();
+        // 今日の使用回数が上限に達している
+        load(); // 通常の読み込みだけ
+        const res = await client.get(`/detergent_usage?id=eq.${UID}`);
+        if (res.data.length > 0) {
+          const remaining = TOTAL - res.data[0].current_uses;
+          showMessage(`本日の使用回数上限 (${MAX_USES_PER_DAY}回) に達しました。残り ${remaining} 回分。`, true);
+        }
       }
     }
 
@@ -220,7 +261,7 @@
     document.getElementById("download-btn").addEventListener("click", downloadCSV);
 
     // ページ読み込み時に自動カウントダウン処理を実行
-    autoUseIfNewDay();
+    autoUseIfWithinLimit();
   </script>
 </body>
 </html>
