@@ -3,263 +3,354 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Freshness Counter</title>
+    <title>洗剤ストックマネージャー</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
+        /* 1. デザインシステムの定義 (CSS Custom Properties) */
         :root {
-            /* 1. 色彩設計の刷新: フレッシュなグラデーションとアクセントカラー */
-            --gradient-start: #2dd4bf; /* Teal */
-            --gradient-end: #3b82f6; /* Blue */
-            --primary-accent: #06b6d4; /* Cyan */
-            --neutral-0: #ffffff;
-            --neutral-100: #f0f9ff;
+            --primary-50: #eff6ff;
+            --primary-100: #dbeafe;
+            --primary-500: #3b82f6;
+            --primary-600: #2563eb;
+            --primary-900: #1e3a8a;
+            
+            --neutral-50: #f8fafc;
+            --neutral-200: #e2e8f0;
             --neutral-400: #94a3b8;
             --neutral-700: #334155;
             --neutral-900: #0f172a;
-            --semantic-error: #f43f5e;
             
-            --font-family: 'M PLUS Rounded 1c', sans-serif;
+            --semantic-success: #10b981;
+            --semantic-warning: #f59e0b;
+            --semantic-error: #ef4444;
+            
+            --text-xs: 0.75rem; /* 12px */
+            --text-sm: 0.875rem; /* 14px */
+            --text-base: 1rem; /* 16px */
+            --text-lg: 1.125rem; /* 18px */
+            --text-xl: 1.25rem; /* 20px */
+            --text-3xl: 1.875rem; /* 30px */
+            
+            --spacing-1: 0.25rem;
+            --spacing-2: 0.5rem;
             --spacing-4: 1rem;
             --spacing-6: 1.5rem;
             --spacing-8: 2rem;
-            --border-radius: 1.5rem; /* より丸みを持たせる */
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-            --transition-bounce: all 0.5s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+            --spacing-12: 3rem;
+
+            --border-radius: 0.75rem;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
-        *, *::before, *::after { box-sizing: border-box; }
-
+        
+        /* 2. 基本スタイルとリセット */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: var(--font-family);
-            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: var(--neutral-50);
+            color: var(--neutral-700);
             margin: 0;
             display: grid;
             place-items: center;
             min-height: 100vh;
             padding: var(--spacing-4);
         }
-
+        
+        /* 3. BEM記法によるコンポーネント設計 */
         .manager-card {
-            background-color: rgba(255, 255, 255, 0.85); /* グラスモーフィズム風 */
-            backdrop-filter: blur(10px);
+            background-color: white;
             border-radius: var(--border-radius);
-            box-shadow: var(--shadow-lg);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: var(--shadow);
             width: 100%;
-            max-width: 380px;
+            max-width: 400px;
             padding: var(--spacing-6);
             text-align: center;
-            /* 2. 心地よい登場アニメーション */
-            transform: translateY(20px) scale(0.95);
-            opacity: 0;
-            animation: fadeIn 0.8s 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            transition: var(--transition);
         }
-        @keyframes fadeIn {
-            to { transform: translateY(0) scale(1); opacity: 1; }
+        @media (min-width: 640px) {
+            .manager-card {
+                padding: var(--spacing-8);
+            }
+        }
+
+        .manager-card__header {
+            margin-bottom: var(--spacing-6);
         }
 
         .manager-card__title {
-            font-size: 1.25rem;
-            font-weight: 800;
+            font-size: var(--text-xl);
+            font-weight: 700;
             color: var(--neutral-900);
-            margin: 0 0 var(--spacing-6);
+            margin: 0 0 var(--spacing-1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-2);
+        }
+        
+        .manager-card__subtitle {
+            font-size: var(--text-sm);
+            color: var(--neutral-400);
+            margin: 0;
         }
 
         .manager-card__status {
-            margin-bottom: var(--spacing-4);
-            position: relative;
+            margin-bottom: var(--spacing-2);
         }
 
-        .manager-card__remaining-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-        
-        /* 3. 数字が変化する際のアニメーション */
         .manager-card__remaining {
-            font-size: 4rem;
-            font-weight: 800;
+            font-size: var(--text-3xl);
+            font-weight: 700;
+            color: var(--primary-600);
             line-height: 1;
-            color: transparent;
-            background-image: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
-            background-clip: text;
-            -webkit-background-clip: text;
-            padding: 0 0.25em; /* 数字が変化しても幅を保つ */
-            transition: all 0.3s ease-in-out;
         }
-        .manager-card__remaining.is-updating {
-            transform: translateY(-10px);
-            opacity: 0;
-        }
-        
+
         .manager-card__remaining-unit {
-            font-size: 1rem;
+            font-size: var(--text-base);
             font-weight: 500;
             color: var(--neutral-700);
-            margin-left: 0.25rem;
+            margin-left: var(--spacing-1);
         }
-
+        
         .manager-card__progress-wrapper {
-            background-color: rgba(0, 0, 0, 0.1);
-            height: 16px;
-            border-radius: 8px;
+            width: 100%;
+            background-color: var(--neutral-200);
+            height: 12px;
+            border-radius: 6px;
             overflow: hidden;
-            margin-bottom: var(--spacing-8);
-            transform: scaleX(0);
-            animation: scaleIn 0.8s 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        @keyframes scaleIn {
-            to { transform: scaleX(1); }
+            margin-bottom: var(--spacing-6);
         }
         
         .manager-card__progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, var(--gradient-start), var(--primary-accent));
+            background-color: var(--primary-500);
             width: 0%;
-            border-radius: 8px;
-            transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+            border-radius: 6px;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s;
         }
+
+        /* プログレスバーの色を残り回数で変化させる */
+        .manager-card__progress-bar--warning { background-color: var(--semantic-warning); }
+        .manager-card__progress-bar--danger { background-color: var(--semantic-error); }
 
         .manager-card__button {
-            background: linear-gradient(135deg, var(--gradient-end), var(--gradient-start));
-            background-size: 200% 200%;
-            color: var(--neutral-0);
-            font-size: 1.125rem;
-            font-weight: 800;
-            padding: var(--spacing-4) 0;
+            background-color: var(--primary-500);
+            color: white;
+            font-size: var(--text-base);
+            font-weight: 500;
+            padding: var(--spacing-4) var(--spacing-6);
             border: none;
-            border-radius: 50px; /* ピル型ボタン */
+            border-radius: var(--border-radius);
             cursor: pointer;
             width: 100%;
-            transition: var(--transition-bounce);
-            position: relative;
-            overflow: hidden;
-            transform: scale(0);
-            animation: scaleIn 0.8s 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        
-        /* 4. 物理性を感じるボタンインタラクション */
-        .manager-card__button:hover:not(:disabled) {
-            transform: translateY(-4px) scale(1.02);
-            box-shadow: 0 15px 25px -5px rgba(59, 130, 246, 0.3);
-            animation: gradient-flow 3s ease infinite;
-        }
-        @keyframes gradient-flow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-2);
         }
 
-        .manager-card__button:active:not(:disabled) {
-            transform: translateY(-1px) scale(0.98);
+        /* インタラクションの強化 */
+        .manager-card__button:hover:not(:disabled) {
+            background-color: var(--primary-600);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        .manager-card__button:focus-visible {
+            outline: 3px solid var(--primary-100);
+            outline-offset: 2px;
         }
         
         .manager-card__button:disabled {
-            filter: grayscale(80%);
-            cursor: not-allowed;
-            opacity: 0.7;
+            background-color: var(--neutral-200);
+            cursor: wait;
         }
         
-        /* 5. 祝福の演出 (完了アニメーション) */
-        .sparkle {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            background: var(--neutral-0);
+        /* ボタン内のスピナー */
+        .spinner {
+            width: 1.25em;
+            height: 1.25em;
+            border: 2px solid currentColor;
+            border-right-color: transparent;
             border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .manager-card__footer {
+            margin-top: var(--spacing-4);
+            font-size: var(--text-xs);
+            color: var(--neutral-400);
+        }
+
+        /* スケルトンローダー */
+        .skeleton {
+            opacity: 0.7;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            background-color: var(--neutral-200);
+            border-radius: 0.5rem;
+        }
+        @keyframes pulse {
+            50% { opacity: .5; }
+        }
+        .skeleton-text { width: 70%; height: 1.25em; margin: 0.5em auto; }
+        .skeleton-title { width: 50%; height: 1.75em; margin: 0.5em auto; }
+        .skeleton-large-text { width: 30%; height: 2.5em; margin: 0.5em auto; }
+        .skeleton-bar { width: 100%; height: 12px; margin-top: 1.5em; }
+        .skeleton-button { width: 100%; height: 3.25em; margin-top: 1.5em; }
+
+        /* トースト通知 */
+        .toast {
+            position: fixed;
+            bottom: var(--spacing-4);
+            left: 50%;
+            transform: translate(-50%, 200%);
+            padding: var(--spacing-2) var(--spacing-4);
+            border-radius: var(--border-radius);
+            color: white;
+            font-size: var(--text-sm);
+            box-shadow: var(--shadow);
             opacity: 0;
-            animation: sparkle-anim 0.7s ease-out forwards;
+            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 1000;
         }
-        @keyframes sparkle-anim {
-            0% { transform: scale(0) rotate(0deg); opacity: 1; }
-            50% { opacity: 1; }
-            100% { transform: scale(1.5) rotate(90deg); opacity: 0; }
+        .toast.show {
+            opacity: 1;
+            transform: translate(-50%, 0);
         }
-        
-        /* スケルトンとトーストは前回のものを継承・微調整 */
-        /* (コードの簡潔さのためここでは省略しますが、実際には必要です) */
+        .toast--success { background-color: var(--semantic-success); }
+        .toast--error { background-color: var(--semantic-error); }
     </style>
 </head>
 <body>
     <main>
-        <section class="manager-card" id="detergentManager">
-            <h1 class="manager-card__title">フレッシュネスカウンター</h1>
-            <div class="manager-card__status">
-                <p>
-                    <span class="manager-card__remaining-wrapper">
-                        <span class="manager-card__remaining" id="remainingCount">83</span>
-                    </span>
-                    <span class="manager-card__remaining-unit">回分</span>
-                </p>
+        <section class="manager-card" id="detergentManager" aria-labelledby="cardTitle">
+            <div id="loader">
+                <div class="skeleton skeleton-title"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-large-text"></div>
+                <div class="skeleton skeleton-bar"></div>
+                <div class="skeleton skeleton-button"></div>
             </div>
-            <div class="manager-card__progress-wrapper">
-                <div class="manager-card__progress-bar" id="progressBar"></div>
+
+            <div id="content" hidden>
+                <header class="manager-card__header">
+                    <h1 class="manager-card__title" id="cardTitle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0L12 2.69z"></path></svg>
+                        <span>部屋干しスーパークリーン</span>
+                    </h1>
+                    <p class="manager-card__subtitle">洗剤ストックマネージャー</p>
+                </header>
+
+                <div class="manager-card__status">
+                    <p>残り <span class="manager-card__remaining" id="remainingCount">...</span><span class="manager-card__remaining-unit">回分</span></p>
+                </div>
+                
+                <div class="manager-card__progress-wrapper" role="progressbar" aria-valuemin="0" aria-valuemax="83" aria-valuenow="0" aria-valuetext="読み込み中...">
+                    <div class="manager-card__progress-bar" id="progressBar"></div>
+                </div>
+
+                <button class="manager-card__button" id="useButton" type="button">
+                    <span id="buttonText">1回分使用する</span>
+                    <div class="spinner" id="buttonSpinner" hidden></div>
+                </button>
+
+                <footer class="manager-card__footer">
+                    ※1回の標準使用量: 22ml
+                </footer>
             </div>
-            <button class="manager-card__button" id="useButton" type="button">洗濯する！</button>
         </section>
     </main>
+    <div id="toastContainer"></div>
+
     <script>
+    // 5. 改善されたJavaScriptロジック
     document.addEventListener('DOMContentLoaded', () => {
-        // --- 設定値 (前回と同様) ---
+        // --- 設定値 ---
         const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
         const UID = "ABC123";
         const USER_EMAIL = "rapicak@gmail.com";
-        const TOTAL_USES = 83;
+        const TOTAL_USES = 83; // 定数として管理
 
-        // --- DOM要素 ---
+        // --- DOM要素のキャッシュ ---
+        const loaderEl = document.getElementById('loader');
+        const contentEl = document.getElementById('content');
         const remainingEl = document.getElementById('remainingCount');
         const progressBarEl = document.getElementById('progressBar');
+        const progressWrapperEl = document.querySelector('.manager-card__progress-wrapper');
         const useButton = document.getElementById('useButton');
+        const buttonText = document.getElementById('buttonText');
+        const buttonSpinner = document.getElementById('buttonSpinner');
+        const toastContainer = document.getElementById('toastContainer');
 
-        let appState = { currentUses: 0, isProcessing: false };
-
-        const client = axios.create({ baseURL: `${SUPABASE_URL}/rest/v1`, headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
-
-        // --- 演出関数 ---
-        const playSparkleAnimation = (targetElement) => {
-            for (let i = 0; i < 7; i++) {
-                const sparkle = document.createElement('div');
-                sparkle.className = 'sparkle';
-                targetElement.appendChild(sparkle);
-                
-                const angle = Math.random() * 360;
-                const radius = targetElement.offsetWidth / 2 * (Math.random() * 0.5 + 0.7);
-                
-                sparkle.style.left = `${Math.cos(angle * Math.PI / 180) * radius + targetElement.offsetWidth / 2}px`;
-                sparkle.style.top = `${Math.sin(angle * Math.PI / 180) * radius + targetElement.offsetHeight / 2}px`;
-                sparkle.style.animationDelay = `${Math.random() * 0.2}s`;
-
-                sparkle.addEventListener('animationend', () => sparkle.remove());
-            }
+        // --- 状態管理 ---
+        let appState = {
+            currentUses: 0,
+            notifiedHalf: false,
+            notifiedLow: false,
+            isProcessing: false,
         };
 
+        // --- APIクライアント ---
+        const client = axios.create({
+            baseURL: `${SUPABASE_URL}/rest/v1`,
+            headers: {
+                apikey: SUPABASE_KEY,
+                Authorization: `Bearer ${SUPABASE_KEY}`,
+            },
+        });
+
         // --- UI更新関数 ---
-        const render = (isInitial = false) => {
+        const render = () => {
             const remaining = TOTAL_USES - appState.currentUses;
             const percentage = remaining > 0 ? (remaining / TOTAL_USES) * 100 : 0;
             
-            // 数字の変化アニメーション
-            if (!isInitial) {
-                remainingEl.classList.add('is-updating');
-                setTimeout(() => {
-                    remainingEl.textContent = remaining;
-                    remainingEl.classList.remove('is-updating');
-                }, 150);
-            } else {
-                remainingEl.textContent = remaining;
-            }
+            remainingEl.textContent = remaining;
+            progressBarEl.style.width = `${percentage}%`;
             
-            // 遅延させてプログレスバーをアニメーションさせる
-            setTimeout(() => {
-                progressBarEl.style.width = `${percentage}%`;
-            }, isInitial ? 800 : 100);
+            // プログレスバーの色を動的に変更
+            progressBarEl.classList.remove('manager-card__progress-bar--warning', 'manager-card__progress-bar--danger');
+            if (remaining <= 10) {
+                progressBarEl.classList.add('manager-card__progress-bar--danger');
+            } else if (remaining <= TOTAL_USES / 2) {
+                progressBarEl.classList.add('manager-card__progress-bar--warning');
+            }
 
+            // アクセシビリティ属性の更新
+            progressWrapperEl.setAttribute('aria-valuenow', remaining);
+            progressWrapperEl.setAttribute('aria-valuetext', `残り ${remaining} 回分`);
+
+            // ボタンの状態を更新
             useButton.disabled = appState.isProcessing || remaining <= 0;
-            useButton.textContent = remaining <= 0 ? 'ストック切れ...' : '洗濯する！';
+            buttonText.textContent = remaining <= 0 ? '使い切りました' : '1回分使用する';
+            buttonSpinner.hidden = !appState.isProcessing;
+        };
+
+        // --- トースト通知関数 ---
+        const showToast = (message, type = 'success') => {
+            const toast = document.createElement('div');
+            toast.className = `toast toast--${type}`;
+            toast.textContent = message;
+            toastContainer.appendChild(toast);
+            
+            // 表示アニメーション
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            // 3秒後に非表示
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 3000);
         };
 
         // --- ビジネスロジック ---
@@ -268,41 +359,82 @@
 
             appState.isProcessing = true;
             
-            // 6. 触覚フィードバック
-            if (navigator.vibrate) navigator.vibrate(50);
-            
+            // オプティミスティックUI: 先にUIを更新
             const previousUses = appState.currentUses;
             appState.currentUses++;
             render();
 
             try {
-                await client.patch(`/detergent_usage?id=eq.${UID}`, { current_uses: appState.currentUses });
-                // 成功したら祝福アニメーション
-                playSparkleAnimation(useButton);
-                // 通知ロジックなどはここに実装...
+                const newUses = appState.currentUses;
+                const remaining = TOTAL_USES - newUses;
+
+                // Supabaseにパッチを送信
+                await client.patch(`/detergent_usage?id=eq.${UID}`, { current_uses: newUses });
+
+                // 通知ロジック
+                if (remaining <= TOTAL_USES / 2 && !appState.notifiedHalf) {
+                    await fetch(`/api/send-email`, {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ type: "半分", remaining, to: USER_EMAIL })
+                    });
+                    await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_half: true });
+                    appState.notifiedHalf = true;
+                }
+
+                if (remaining <= 10 && !appState.notifiedLow) {
+                    await fetch(`/api/send-email`, {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ type: "残りわずか", remaining, to: USER_EMAIL })
+                    });
+                    await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_low: true });
+                    appState.notifiedLow = true;
+                }
+                
+                showToast('使用履歴を記録しました！');
+
             } catch (error) {
                 console.error("更新エラー:", error);
+                showToast('更新に失敗しました。', 'error');
+                // ロールバック: 失敗した場合はUIを元に戻す
                 appState.currentUses = previousUses;
-                render(); // ロールバック
+                render();
             } finally {
                 appState.isProcessing = false;
+                render(); // ボタンの状態を最終更新
+            }
+        };
+        
+        // --- 初期化処理 ---
+        const initializeApp = async () => {
+            try {
+                const { data } = await client.get(`/detergent_usage?id=eq.${UID}`);
+
+                if (data.length === 0) {
+                    // 新規ユーザー: データを作成
+                    await client.post(`/detergent_usage`, { id: UID, email: USER_EMAIL, current_uses: 0, notified_half: false, notified_low: false });
+                    appState = { ...appState, currentUses: 0, notifiedHalf: false, notifiedLow: false };
+                } else {
+                    const item = data[0];
+                    appState = { ...appState, currentUses: item.current_uses, notifiedHalf: item.notified_half, notifiedLow: item.notified_low };
+                }
+
+            } catch (error) {
+                console.error("初期化エラー:", error);
+                showToast('データの読み込みに失敗しました。', 'error');
+                // エラー時でもUIを部分的に表示
+                contentEl.innerHTML = `<p style="color: var(--semantic-error);">エラーが発生しました。再読み込みしてください。</p>`;
+            } finally {
+                // ローダーを非表示にし、コンテンツを表示
+                loaderEl.hidden = true;
+                contentEl.hidden = false;
                 render();
             }
         };
 
-        // --- 初期化 ---
-        const initializeApp = async () => {
-            try {
-                const { data } = await client.get(`/detergent_usage?id=eq.${UID}`);
-                appState.currentUses = data.length > 0 ? data[0].current_uses : 0;
-            } catch (error) {
-                console.error("初期化エラー:", error);
-            } finally {
-                render(true);
-            }
-        };
-
+        // --- イベントリスナーの設定 ---
         useButton.addEventListener('click', handleUseOnce);
+
+        // --- アプリケーションの開始 ---
         initializeApp();
     });
     </script>
