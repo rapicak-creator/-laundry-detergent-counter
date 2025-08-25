@@ -472,7 +472,7 @@
         if (history.length > 0) {
           const lastTime = new Date(history[history.length - 1].used_at).getTime();
           const diff = now - lastTime;
-          if (diff < 10 * 60 * 1000) { // 10分未満
+          if (diff < 1 * 60 * 1000) { // 10分未満
             canRecord = false;
           }
         }
