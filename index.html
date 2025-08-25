@@ -253,8 +253,9 @@
         </div>
       </div>
 
-      <button id="useBtn" class="btn" aria-label="洗剤を1回使用済みにする">
-        使用済みにする
+
+      <button id="csvBtn" class="btn" style="margin-top:1rem; background:var(--primary-light); color:var(--primary);" aria-label="CSVダウンロード">
+        CSVダウンロード
       </button>
 
       <p id="warning" class="warning" style="display:none;"></p>
@@ -278,13 +279,39 @@
     const remainingEl = document.getElementById('remaining');
     const barEl = document.getElementById('bar');
     const progressTextEl = document.getElementById('progressText');
-    const useBtn = document.getElementById('useBtn');
+  //const useBtn = document.getElementById('useBtn');
+    const csvBtn = document.getElementById('csvBtn');
     const warningEl = document.getElementById('warning');
     const toastEl = document.getElementById('toast');
 
     // ================================
     // ツール関数
     // ================================
+      // ボタン押下履歴
+      const useHistory = [];
+
+      // CSV生成・ダウンロード
+      function downloadCSV() {
+        if (useHistory.length === 0) {
+          showToast("履歴がありません");
+          return;
+        }
+          let csv = 'No,日時\n';
+          useHistory.forEach((dt, i) => {
+            csv += `${i+1},${dt}\n`;
+          });
+          // BOM付与
+          const bom = '\uFEFF';
+          const blob = new Blob([bom + csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'use_history.csv';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+      }
     const showToast = (message) => {
       toastEl.textContent = message;
       toastEl.classList.add('show');
@@ -396,62 +423,64 @@
       }
     }
 
-    async function useOnce() {
+
+    async function countDownOnAccess() {
       if (!navigator.onLine) {
         showToast("オフラインです");
         return;
       }
 
-      try {
-        useBtn.disabled = true;
-        useBtn.textContent = "処理中...";
-
-        const data = await supabase.get();
-        if (data.length === 0) throw new Error("データがありません");
-
-        const item = data[0];
-        const newUses = item.current_uses + 1;
-        const remaining = MAX_USES - newUses;
-
-        await supabase.update(newUses);
-
-        // メール通知（必要なら）
-        if (remaining <= 41 && !item.notified_half) {
-          // ※ 実際には /api/send-email は別バックエンドが必要
-          console.log("半分通知");
-          await supabase.update(newUses, true, item.notified_low);
+      // 直近記録時刻をlocalStorageから取得
+      const lastTime = localStorage.getItem('lastUseTime');
+      const now = Date.now();
+      let canRecord = true;
+      if (lastTime) {
+        const diff = now - parseInt(lastTime, 10);
+        if (diff < 10 * 60 * 1000) { // 10分未満
+          canRecord = false;
         }
+      }
 
-        if (remaining <= 10 && !item.notified_low) {
-          console.log("残りわずか通知");
-          await supabase.update(newUses, item.notified_half, true);
+      if (canRecord) {
+        useHistory.push(new Date().toLocaleString('ja-JP', { hour12: false }));
+        localStorage.setItem('lastUseTime', now.toString());
+        try {
+          const data = await supabase.get();
+          if (data.length === 0) throw new Error("データがありません");
+
+          const item = data[0];
+          const newUses = item.current_uses + 1;
+          const remaining = MAX_USES - newUses;
+
+          await supabase.update(newUses);
+
+          // メール通知（必要なら）
+          if (remaining <= 41 && !item.notified_half) {
+            await supabase.update(newUses, true, item.notified_low);
+          }
+          if (remaining <= 10 && !item.notified_low) {
+            await supabase.update(newUses, item.notified_half, true);
+          }
+
+          updateUI(remaining, newUses);
+          showToast(`${remaining}回残っています`);
+        } catch (e) {
+          showToast("更新失敗");
+          console.error(e);
         }
-
-        updateUI(remaining, newUses);
-        showToast(`${remaining}回残っています`);
-
-      } catch (e) {
-        showToast("更新失敗");
-        console.error(e);
-      } finally {
-        useBtn.disabled = false;
-        useBtn.textContent = "使用済みにする";
+      } else {
+        showToast("10分以内の連続記録はできません");
       }
     }
 
-    // ================================
-    // イベント登録
-    // ================================
-    useBtn.addEventListener('click', useOnce);
-    useBtn.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        useOnce();
-      }
-    });
+  // ================================
+  // イベント登録
+  // ================================
+  csvBtn.addEventListener('click', downloadCSV);
 
-    // 初期読み込み
-    load();
+  // 初期読み込み & アクセス時カウントダウン
+  load();
+  countDownOnAccess();
   </script>
 </body>
 </html>
