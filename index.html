@@ -6,437 +6,697 @@
     <title>洗剤ストックマネージャー</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.0/axios.min.js"></script>
     <style>
-        /* 1. デザインシステムの定義 (CSS Custom Properties) */
+        /* === デザインシステム === */
         :root {
-            --primary-50: #eff6ff;
-            --primary-100: #dbeafe;
-            --primary-500: #3b82f6;
-            --primary-600: #2563eb;
-            --primary-900: #1e3a8a;
+            /* カラーパレット */
+            --primary-50: #f0f9ff;
+            --primary-100: #e0f2fe;
+            --primary-200: #bae6fd;
+            --primary-300: #7dd3fc;
+            --primary-400: #38bdf8;
+            --primary-500: #0ea5e9;
+            --primary-600: #0284c7;
+            --primary-700: #0369a1;
+            --primary-800: #075985;
+            --primary-900: #0c4a6e;
             
+            --neutral-0: #ffffff;
             --neutral-50: #f8fafc;
+            --neutral-100: #f1f5f9;
             --neutral-200: #e2e8f0;
+            --neutral-300: #cbd5e1;
             --neutral-400: #94a3b8;
+            --neutral-500: #64748b;
+            --neutral-600: #475569;
             --neutral-700: #334155;
+            --neutral-800: #1e293b;
             --neutral-900: #0f172a;
             
-            --semantic-success: #10b981;
-            --semantic-warning: #f59e0b;
-            --semantic-error: #ef4444;
+            /* セマンティックカラー */
+            --success-50: #f0fdf4;
+            --success-500: #22c55e;
+            --success-600: #16a34a;
+            --warning-50: #fffbeb;
+            --warning-500: #f59e0b;
+            --warning-600: #d97706;
+            --error-50: #fef2f2;
+            --error-500: #ef4444;
+            --error-600: #dc2626;
             
-            --text-xs: 0.75rem; /* 12px */
-            --text-sm: 0.875rem; /* 14px */
-            --text-base: 1rem; /* 16px */
-            --text-lg: 1.125rem; /* 18px */
-            --text-xl: 1.25rem; /* 20px */
-            --text-3xl: 1.875rem; /* 30px */
+            /* タイポグラフィ */
+            --font-size-xs: 0.75rem;
+            --font-size-sm: 0.875rem;
+            --font-size-base: 1rem;
+            --font-size-lg: 1.125rem;
+            --font-size-xl: 1.25rem;
+            --font-size-2xl: 1.5rem;
+            --font-size-3xl: 1.875rem;
+            --font-size-4xl: 2.25rem;
             
-            --spacing-1: 0.25rem;
-            --spacing-2: 0.5rem;
-            --spacing-4: 1rem;
-            --spacing-6: 1.5rem;
-            --spacing-8: 2rem;
-            --spacing-12: 3rem;
-
-            --border-radius: 0.75rem;
-            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-weight-light: 300;
+            --font-weight-normal: 400;
+            --font-weight-medium: 500;
+            --font-weight-semibold: 600;
+            --font-weight-bold: 700;
+            
+            /* スペーシング */
+            --space-1: 0.25rem;
+            --space-2: 0.5rem;
+            --space-3: 0.75rem;
+            --space-4: 1rem;
+            --space-5: 1.25rem;
+            --space-6: 1.5rem;
+            --space-8: 2rem;
+            --space-10: 2.5rem;
+            --space-12: 3rem;
+            --space-16: 4rem;
+            
+            /* ボーダーと影 */
+            --border-radius-sm: 0.375rem;
+            --border-radius-md: 0.5rem;
+            --border-radius-lg: 0.75rem;
+            --border-radius-xl: 1rem;
+            --border-radius-2xl: 1.5rem;
+            
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            
+            /* アニメーション */
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+            
+            --animate-bounce: bounce 1s infinite;
+            --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            --animate-spin: spin 1s linear infinite;
         }
-        
-        /* 2. 基本スタイルとリセット */
+
+        /* === ベーススタイル === */
         *, *::before, *::after {
             box-sizing: border-box;
         }
-        
+
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: 'Noto Sans JP', sans-serif;
-            background-color: var(--neutral-50);
+            font-family: 'Noto Sans JP', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, var(--primary-50) 0%, var(--neutral-50) 100%);
             color: var(--neutral-700);
             margin: 0;
-            display: grid;
-            place-items: center;
             min-height: 100vh;
-            padding: var(--spacing-4);
-        }
-        
-        /* 3. BEM記法によるコンポーネント設計 */
-        .manager-card {
-            background-color: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            width: 100%;
-            max-width: 400px;
-            padding: var(--spacing-6);
-            text-align: center;
-            transition: var(--transition);
-        }
-        @media (min-width: 640px) {
-            .manager-card {
-                padding: var(--spacing-8);
-            }
-        }
-
-        .manager-card__header {
-            margin-bottom: var(--spacing-6);
-        }
-
-        .manager-card__title {
-            font-size: var(--text-xl);
-            font-weight: 700;
-            color: var(--neutral-900);
-            margin: 0 0 var(--spacing-1);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: var(--spacing-2);
+            padding: var(--space-4);
+            line-height: 1.6;
+            font-size: var(--font-size-base);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
-        
-        .manager-card__subtitle {
-            font-size: var(--text-sm);
-            color: var(--neutral-400);
+
+        /* === カードコンポーネント === */
+        .detergent-manager {
+            background: var(--neutral-0);
+            border-radius: var(--border-radius-2xl);
+            box-shadow: var(--shadow-xl);
+            width: 100%;
+            max-width: 420px;
+            overflow: hidden;
+            position: relative;
+            transition: var(--transition-base);
+        }
+
+        .detergent-manager:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+        }
+
+        .detergent-manager__header {
+            background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
+            color: var(--neutral-0);
+            padding: var(--space-6) var(--space-6) var(--space-8);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .detergent-manager__header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+            opacity: 0.1;
+        }
+
+        .detergent-manager__title {
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-semibold);
+            margin: 0 0 var(--space-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .detergent-manager__subtitle {
+            font-size: var(--font-size-sm);
+            opacity: 0.9;
             margin: 0;
+            font-weight: var(--font-weight-normal);
+            position: relative;
+            z-index: 1;
         }
 
-        .manager-card__status {
-            margin-bottom: var(--spacing-2);
+        .detergent-manager__content {
+            padding: var(--space-8) var(--space-6) var(--space-6);
         }
 
-        .manager-card__remaining {
-            font-size: var(--text-3xl);
-            font-weight: 700;
+        /* === 統計表示 === */
+        .detergent-manager__stats {
+            text-align: center;
+            margin-bottom: var(--space-8);
+        }
+
+        .detergent-manager__remaining {
+            font-size: var(--font-size-4xl);
+            font-weight: var(--font-weight-bold);
             color: var(--primary-600);
             line-height: 1;
+            margin-bottom: var(--space-2);
+            background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        .manager-card__remaining-unit {
-            font-size: var(--text-base);
-            font-weight: 500;
-            color: var(--neutral-700);
-            margin-left: var(--spacing-1);
+        .detergent-manager__remaining-label {
+            font-size: var(--font-size-base);
+            color: var(--neutral-500);
+            font-weight: var(--font-weight-medium);
+            margin: 0;
         }
-        
-        .manager-card__progress-wrapper {
+
+        .detergent-manager__usage-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-4);
+            margin: var(--space-6) 0;
+            padding: var(--space-4);
+            background: var(--neutral-50);
+            border-radius: var(--border-radius-lg);
+            border: 1px solid var(--neutral-200);
+        }
+
+        .detergent-manager__info-item {
+            text-align: center;
+        }
+
+        .detergent-manager__info-value {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            color: var(--neutral-800);
+            margin: 0;
+        }
+
+        .detergent-manager__info-label {
+            font-size: var(--font-size-xs);
+            color: var(--neutral-500);
+            margin: var(--space-1) 0 0;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* === プログレスバー === */
+        .detergent-manager__progress {
+            margin-bottom: var(--space-8);
+        }
+
+        .detergent-manager__progress-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-3);
+            font-size: var(--font-size-sm);
+            color: var(--neutral-600);
+            font-weight: var(--font-weight-medium);
+        }
+
+        .detergent-manager__progress-bar {
             width: 100%;
-            background-color: var(--neutral-200);
             height: 12px;
-            border-radius: 6px;
+            background: var(--neutral-200);
+            border-radius: var(--border-radius-lg);
             overflow: hidden;
-            margin-bottom: var(--spacing-6);
+            position: relative;
         }
-        
-        .manager-card__progress-bar {
+
+        .detergent-manager__progress-fill {
             height: 100%;
-            background-color: var(--primary-500);
+            background: linear-gradient(90deg, var(--primary-400), var(--primary-600));
+            border-radius: var(--border-radius-lg);
             width: 0%;
-            border-radius: 6px;
-            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s;
+            transition: width var(--transition-slow), background var(--transition-base);
+            position: relative;
         }
 
-        /* プログレスバーの色を残り回数で変化させる */
-        .manager-card__progress-bar--warning { background-color: var(--semantic-warning); }
-        .manager-card__progress-bar--danger { background-color: var(--semantic-error); }
+        .detergent-manager__progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shimmer 2s infinite;
+        }
 
-        .manager-card__button {
-            background-color: var(--primary-500);
-            color: white;
-            font-size: var(--text-base);
-            font-weight: 500;
-            padding: var(--spacing-4) var(--spacing-6);
-            border: none;
-            border-radius: var(--border-radius);
-            cursor: pointer;
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(200%); }
+        }
+
+        .detergent-manager__progress-fill--warning {
+            background: linear-gradient(90deg, var(--warning-500), var(--warning-600));
+        }
+
+        .detergent-manager__progress-fill--danger {
+            background: linear-gradient(90deg, var(--error-500), var(--error-600));
+        }
+
+        /* === アクションボタン === */
+        .detergent-manager__action {
+            margin-bottom: var(--space-6);
+        }
+
+        .detergent-manager__button {
             width: 100%;
-            transition: var(--transition);
+            padding: var(--space-4) var(--space-6);
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
+            color: var(--neutral-0);
+            border: none;
+            border-radius: var(--border-radius-xl);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-semibold);
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: var(--spacing-2);
+            gap: var(--space-3);
+            transition: var(--transition-base);
+            position: relative;
+            overflow: hidden;
+            font-family: inherit;
+            min-height: 56px;
         }
 
-        /* インタラクションの強化 */
-        .manager-card__button:hover:not(:disabled) {
-            background-color: var(--primary-600);
+        .detergent-manager__button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: var(--transition-base);
+        }
+
+        .detergent-manager__button:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            box-shadow: var(--shadow-lg);
         }
 
-        .manager-card__button:focus-visible {
-            outline: 3px solid var(--primary-100);
+        .detergent-manager__button:hover:not(:disabled)::before {
+            left: 100%;
+        }
+
+        .detergent-manager__button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .detergent-manager__button:focus-visible {
+            outline: 3px solid var(--primary-200);
             outline-offset: 2px;
         }
-        
-        .manager-card__button:disabled {
-            background-color: var(--neutral-200);
-            cursor: wait;
+
+        .detergent-manager__button:disabled {
+            background: var(--neutral-300);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
-        
-        /* ボタン内のスピナー */
+
+        .detergent-manager__button:disabled::before {
+            display: none;
+        }
+
+        /* === スピナー === */
         .spinner {
-            width: 1.25em;
-            height: 1.25em;
+            width: 20px;
+            height: 20px;
             border: 2px solid currentColor;
             border-right-color: transparent;
             border-radius: 50%;
-            animation: spin 0.75s linear infinite;
+            animation: var(--animate-spin);
         }
+
+        /* === フッター === */
+        .detergent-manager__footer {
+            padding: var(--space-4) var(--space-6) var(--space-6);
+            text-align: center;
+            background: var(--neutral-50);
+            border-top: 1px solid var(--neutral-200);
+        }
+
+        .detergent-manager__footer-text {
+            font-size: var(--font-size-xs);
+            color: var(--neutral-500);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+        }
+
+        /* === スケルトンローダー === */
+        .skeleton {
+            background: linear-gradient(90deg, var(--neutral-200) 25%, var(--neutral-100) 50%, var(--neutral-200) 75%);
+            background-size: 200% 100%;
+            animation: var(--animate-pulse);
+            border-radius: var(--border-radius-md);
+        }
+
+        .skeleton--text { height: 1em; margin: 0.25em 0; }
+        .skeleton--title { height: 1.5em; width: 60%; margin: 0 auto 0.5em; }
+        .skeleton--number { height: 2.5em; width: 40%; margin: 0 auto 0.5em; }
+        .skeleton--button { height: 56px; margin: 1em 0; }
+        .skeleton--progress { height: 12px; margin: 1em 0; }
+
+        /* === トースト通知 === */
+        .toast-container {
+            position: fixed;
+            bottom: var(--space-6);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: var(--neutral-0);
+            color: var(--neutral-800);
+            padding: var(--space-4) var(--space-6);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-xl);
+            margin: var(--space-2) 0;
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            max-width: 360px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: var(--transition-base);
+            pointer-events: auto;
+            border-left: 4px solid var(--success-500);
+        }
+
+        .toast--success { border-left-color: var(--success-500); }
+        .toast--error { border-left-color: var(--error-500); }
+        .toast--warning { border-left-color: var(--warning-500); }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast__icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        .toast__message {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            flex: 1;
+        }
+
+        /* === アニメーション定義 === */
+        @keyframes bounce {
+            0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
+            40%, 43% { transform: translate3d(0,-30px,0); }
+            70% { transform: translate3d(0,-15px,0); }
+            90% { transform: translate3d(0,-4px,0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+
         @keyframes spin {
+            from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
 
-        .manager-card__footer {
-            margin-top: var(--spacing-4);
-            font-size: var(--text-xs);
-            color: var(--neutral-400);
+        /* === レスポンシブデザイン === */
+        @media (max-width: 480px) {
+            body {
+                padding: var(--space-2);
+            }
+            
+            .detergent-manager {
+                max-width: none;
+            }
+            
+            .detergent-manager__header {
+                padding: var(--space-5) var(--space-4) var(--space-6);
+            }
+            
+            .detergent-manager__content {
+                padding: var(--space-6) var(--space-4) var(--space-4);
+            }
+            
+            .detergent-manager__remaining {
+                font-size: var(--font-size-3xl);
+            }
+            
+            .detergent-manager__usage-info {
+                grid-template-columns: 1fr;
+                gap: var(--space-2);
+            }
         }
 
-        /* スケルトンローダー */
-        .skeleton {
-            opacity: 0.7;
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-            background-color: var(--neutral-200);
-            border-radius: 0.5rem;
+        /* === プリンター対応 === */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+            
+            .detergent-manager {
+                box-shadow: none;
+                border: 2px solid #ccc;
+            }
+            
+            .detergent-manager__button {
+                display: none;
+            }
         }
-        @keyframes pulse {
-            50% { opacity: .5; }
-        }
-        .skeleton-text { width: 70%; height: 1.25em; margin: 0.5em auto; }
-        .skeleton-title { width: 50%; height: 1.75em; margin: 0.5em auto; }
-        .skeleton-large-text { width: 30%; height: 2.5em; margin: 0.5em auto; }
-        .skeleton-bar { width: 100%; height: 12px; margin-top: 1.5em; }
-        .skeleton-button { width: 100%; height: 3.25em; margin-top: 1.5em; }
 
-        /* トースト通知 */
-        .toast {
-            position: fixed;
-            bottom: var(--spacing-4);
-            left: 50%;
-            transform: translate(-50%, 200%);
-            padding: var(--spacing-2) var(--spacing-4);
-            border-radius: var(--border-radius);
-            color: white;
-            font-size: var(--text-sm);
-            box-shadow: var(--shadow);
-            opacity: 0;
-            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
-            z-index: 1000;
+        /* === ハイコントラストモード対応 === */
+        @media (prefers-contrast: high) {
+            :root {
+                --primary-500: #0066cc;
+                --primary-600: #0052a3;
+                --neutral-700: #000000;
+                --neutral-500: #666666;
+            }
         }
-        .toast.show {
-            opacity: 1;
-            transform: translate(-50%, 0);
+
+        /* === アニメーション削減設定 === */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
         }
-        .toast--success { background-color: var(--semantic-success); }
-        .toast--error { background-color: var(--semantic-error); }
+
+        /* === ダークモード対応 === */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --neutral-0: #1e293b;
+                --neutral-50: #0f172a;
+                --neutral-100: #1e293b;
+                --neutral-200: #334155;
+                --neutral-700: #e2e8f0;
+                --neutral-800: #f1f5f9;
+                --neutral-900: #f8fafc;
+            }
+            
+            body {
+                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            }
+        }
     </style>
 </head>
 <body>
     <main>
-        <section class="manager-card" id="detergentManager" aria-labelledby="cardTitle">
-            <div id="loader">
-                <div class="skeleton skeleton-title"></div>
-                <div class="skeleton skeleton-text"></div>
-                <div class="skeleton skeleton-large-text"></div>
-                <div class="skeleton skeleton-bar"></div>
-                <div class="skeleton skeleton-button"></div>
+        <article class="detergent-manager" id="detergentManager" role="application" aria-label="洗剤ストックマネージャー">
+            <!-- ローディング状態 -->
+            <div id="loadingState" aria-live="polite" aria-label="データを読み込み中">
+                <div class="detergent-manager__header">
+                    <div class="skeleton skeleton--title"></div>
+                    <div class="skeleton skeleton--text"></div>
+                </div>
+                <div class="detergent-manager__content">
+                    <div class="skeleton skeleton--number"></div>
+                    <div class="skeleton skeleton--text"></div>
+                    <div class="skeleton skeleton--progress"></div>
+                    <div class="skeleton skeleton--button"></div>
+                </div>
             </div>
 
-            <div id="content" hidden>
-                <header class="manager-card__header">
-                    <h1 class="manager-card__title" id="cardTitle">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0L12 2.69z"></path></svg>
-                        <span>部屋干しスーパークリーン</span>
+            <!-- メインコンテンツ -->
+            <div id="mainContent" hidden>
+                <header class="detergent-manager__header">
+                    <h1 class="detergent-manager__title" id="appTitle">
+                        <svg class="detergent-manager__icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0L12 2.69z"></path>
+                        </svg>
+                        部屋干しスーパークリーン
                     </h1>
-                    <p class="manager-card__subtitle">洗剤ストックマネージャー</p>
+                    <p class="detergent-manager__subtitle">洗剤ストックマネージャー</p>
                 </header>
 
-                <div class="manager-card__status">
-                    <p>残り <span class="manager-card__remaining" id="remainingCount">...</span><span class="manager-card__remaining-unit">回分</span></p>
-                </div>
-                
-                <div class="manager-card__progress-wrapper" role="progressbar" aria-valuemin="0" aria-valuemax="83" aria-valuenow="0" aria-valuetext="読み込み中...">
-                    <div class="manager-card__progress-bar" id="progressBar"></div>
+                <div class="detergent-manager__content">
+                    <div class="detergent-manager__stats">
+                        <div class="detergent-manager__remaining" id="remainingCount" aria-describedby="remainingLabel">0</div>
+                        <p class="detergent-manager__remaining-label" id="remainingLabel">回分残っています</p>
+                    </div>
+
+                    <div class="detergent-manager__usage-info">
+                        <div class="detergent-manager__info-item">
+                            <p class="detergent-manager__info-value" id="usedCount">0</p>
+                            <p class="detergent-manager__info-label">使用済み</p>
+                        </div>
+                        <div class="detergent-manager__info-item">
+                            <p class="detergent-manager__info-value" id="totalCount">83</p>
+                            <p class="detergent-manager__info-label">総容量</p>
+                        </div>
+                    </div>
+
+                    <div class="detergent-manager__progress">
+                        <div class="detergent-manager__progress-label">
+                            <span>使用状況</span>
+                            <span id="progressPercentage">0%</span>
+                        </div>
+                        <div class="detergent-manager__progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="83" aria-valuenow="83" aria-label="洗剤残量">
+                            <div class="detergent-manager__progress-fill" id="progressFill"></div>
+                        </div>
+                    </div>
+
+                    <div class="detergent-manager__action">
+                        <button class="detergent-manager__button" id="useButton" type="button" aria-describedby="buttonDescription">
+                            <span id="buttonText">1回分使用する</span>
+                            <div class="spinner" id="buttonSpinner" hidden aria-hidden="true"></div>
+                        </button>
+                        <div id="buttonDescription" class="sr-only">洗剤を1回分使用したことを記録します</div>
+                    </div>
                 </div>
 
-                <button class="manager-card__button" id="useButton" type="button">
-                    <span id="buttonText">1回分使用する</span>
-                    <div class="spinner" id="buttonSpinner" hidden></div>
-                </button>
-
-                <footer class="manager-card__footer">
-                    ※1回の標準使用量: 22ml
+                <footer class="detergent-manager__footer">
+                    <p class="detergent-manager__footer-text">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                        1回の標準使用量: 22ml
+                    </p>
                 </footer>
             </div>
-        </section>
+        </article>
     </main>
-    <div id="toastContainer"></div>
+
+    <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
     <script>
-    // 5. 改善されたJavaScriptロジック
-    document.addEventListener('DOMContentLoaded', () => {
-        // --- 設定値 ---
-        const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
-        const UID = "ABC123";
-        const USER_EMAIL = "rapicak@gmail.com";
-        const TOTAL_USES = 83; // 定数として管理
-
-        // --- DOM要素のキャッシュ ---
-        const loaderEl = document.getElementById('loader');
-        const contentEl = document.getElementById('content');
-        const remainingEl = document.getElementById('remainingCount');
-        const progressBarEl = document.getElementById('progressBar');
-        const progressWrapperEl = document.querySelector('.manager-card__progress-wrapper');
-        const useButton = document.getElementById('useButton');
-        const buttonText = document.getElementById('buttonText');
-        const buttonSpinner = document.getElementById('buttonSpinner');
-        const toastContainer = document.getElementById('toastContainer');
-
-        // --- 状態管理 ---
-        let appState = {
-            currentUses: 0,
-            notifiedHalf: false,
-            notifiedLow: false,
-            isProcessing: false,
-        };
-
-        // --- APIクライアント ---
-        const client = axios.create({
-            baseURL: `${SUPABASE_URL}/rest/v1`,
-            headers: {
-                apikey: SUPABASE_KEY,
-                Authorization: `Bearer ${SUPABASE_KEY}`,
-            },
-        });
-
-        // --- UI更新関数 ---
-        const render = () => {
-            const remaining = TOTAL_USES - appState.currentUses;
-            const percentage = remaining > 0 ? (remaining / TOTAL_USES) * 100 : 0;
-            
-            remainingEl.textContent = remaining;
-            progressBarEl.style.width = `${percentage}%`;
-            
-            // プログレスバーの色を動的に変更
-            progressBarEl.classList.remove('manager-card__progress-bar--warning', 'manager-card__progress-bar--danger');
-            if (remaining <= 10) {
-                progressBarEl.classList.add('manager-card__progress-bar--danger');
-            } else if (remaining <= TOTAL_USES / 2) {
-                progressBarEl.classList.add('manager-card__progress-bar--warning');
-            }
-
-            // アクセシビリティ属性の更新
-            progressWrapperEl.setAttribute('aria-valuenow', remaining);
-            progressWrapperEl.setAttribute('aria-valuetext', `残り ${remaining} 回分`);
-
-            // ボタンの状態を更新
-            useButton.disabled = appState.isProcessing || remaining <= 0;
-            buttonText.textContent = remaining <= 0 ? '使い切りました' : '1回分使用する';
-            buttonSpinner.hidden = !appState.isProcessing;
-        };
-
-        // --- トースト通知関数 ---
-        const showToast = (message, type = 'success') => {
-            const toast = document.createElement('div');
-            toast.className = `toast toast--${type}`;
-            toast.textContent = message;
-            toastContainer.appendChild(toast);
-            
-            // 表示アニメーション
-            setTimeout(() => toast.classList.add('show'), 100);
-            
-            // 3秒後に非表示
-            setTimeout(() => {
-                toast.classList.remove('show');
-                toast.addEventListener('transitionend', () => toast.remove());
-            }, 3000);
-        };
-
-        // --- ビジネスロジック ---
-        const handleUseOnce = async () => {
-            if (appState.isProcessing || (TOTAL_USES - appState.currentUses) <= 0) return;
-
-            appState.isProcessing = true;
-            
-            // オプティミスティックUI: 先にUIを更新
-            const previousUses = appState.currentUses;
-            appState.currentUses++;
-            render();
-
-            try {
-                const newUses = appState.currentUses;
-                const remaining = TOTAL_USES - newUses;
-
-                // Supabaseにパッチを送信
-                await client.patch(`/detergent_usage?id=eq.${UID}`, { current_uses: newUses });
-
-                // 通知ロジック
-                if (remaining <= TOTAL_USES / 2 && !appState.notifiedHalf) {
-                    await fetch(`/api/send-email`, {
-                        method: "POST", headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ type: "半分", remaining, to: USER_EMAIL })
-                    });
-                    await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_half: true });
-                    appState.notifiedHalf = true;
-                }
-
-                if (remaining <= 10 && !appState.notifiedLow) {
-                    await fetch(`/api/send-email`, {
-                        method: "POST", headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ type: "残りわずか", remaining, to: USER_EMAIL })
-                    });
-                    await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_low: true });
-                    appState.notifiedLow = true;
-                }
-                
-                showToast('使用履歴を記録しました！');
-
-            } catch (error) {
-                console.error("更新エラー:", error);
-                showToast('更新に失敗しました。', 'error');
-                // ロールバック: 失敗した場合はUIを元に戻す
-                appState.currentUses = previousUses;
-                render();
-            } finally {
-                appState.isProcessing = false;
-                render(); // ボタンの状態を最終更新
-            }
-        };
-        
-        // --- 初期化処理 ---
-        const initializeApp = async () => {
-            try {
-                const { data } = await client.get(`/detergent_usage?id=eq.${UID}`);
-
-                if (data.length === 0) {
-                    // 新規ユーザー: データを作成
-                    await client.post(`/detergent_usage`, { id: UID, email: USER_EMAIL, current_uses: 0, notified_half: false, notified_low: false });
-                    appState = { ...appState, currentUses: 0, notifiedHalf: false, notifiedLow: false };
-                } else {
-                    const item = data[0];
-                    appState = { ...appState, currentUses: item.current_uses, notifiedHalf: item.notified_half, notifiedLow: item.notified_low };
-                }
-
-            } catch (error) {
-                console.error("初期化エラー:", error);
-                showToast('データの読み込みに失敗しました。', 'error');
-                // エラー時でもUIを部分的に表示
-                contentEl.innerHTML = `<p style="color: var(--semantic-error);">エラーが発生しました。再読み込みしてください。</p>`;
-            } finally {
-                // ローダーを非表示にし、コンテンツを表示
-                loaderEl.hidden = true;
-                contentEl.hidden = false;
-                render();
+        // === アプリケーション設定 ===
+        const CONFIG = {
+            SUPABASE_URL: "https://vnzyqgrkjkeiwahainnc.supabase.co",
+            SUPABASE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg",
+            UID: "ABC123",
+            USER_EMAIL: "rapicak@gmail.com",
+            TOTAL_USES: 83,
+            USAGE_AMOUNT: 22, // ml
+            NOTIFICATION_THRESHOLDS: {
+                HALF: 0.5,
+                LOW: 10
             }
         };
 
-        // --- イベントリスナーの設定 ---
-        useButton.addEventListener('click', handleUseOnce);
+        // === DOM要素のキャッシュ ===
+        const elements = {
+            loadingState: document.getElementById('loadingState'),
+            mainContent: document.getElementById('mainContent'),
+            remainingCount: document.getElementById('remainingCount'),
+            usedCount: document.getElementById('usedCount'),
+            totalCount: document.getElementById('totalCount'),
+            progressFill: document.getElementById('progressFill'),
+            progressPercentage: document.getElementById('progressPercentage'),
+            progressBar: document.querySelector('.detergent-manager__progress-bar'),
+            useButton: document.getElementById('useButton'),
+            buttonText: document.getElementById('buttonText'),
+            buttonSpinner: document.getElementById('buttonSpinner'),
+            toastContainer: document.getElementById('toastContainer')
+        };
 
-        // --- アプリケーションの開始 ---
-        initializeApp();
-    });
-    </script>
-</body>
-</html>
+        // === アプリケーション状態管理 ===
+        class AppState {
+            constructor() {
+                this.currentUses = 0;
+                this.notifiedHalf = false;
+                this.notifiedLow = false;
+                this.isProcessing = false;
+                this.listeners = [];
+            }
+
+            update(updates) {
+                Object.assign(this, updates);
+                this.notifyListeners();
+            }
+
+            subscribe(listener) {
+                this.listeners.push(listener);
+                return () => {
+                    this.listeners = this.listeners.filter(l => l !== listener);
+                };
+            }
+
+            notifyListeners() {
+                this.listeners.forEach(listener => listener(this));
+            }
+        }
+
+        // === APIクライアント ===
+        class APIClient {
+            constructor() {
+                this.client = axios.create({
+                    baseURL: `${CONFIG.SUPABASE_URL}/rest/v1`,
+                    headers: {
+                        apikey: CONFIG.SUPABASE_KEY,
+                        Authorization: `Bearer ${CONFIG.SUPABASE_KEY}`,
+                        'Content-Type': 'application
