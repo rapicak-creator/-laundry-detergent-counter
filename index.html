@@ -30,14 +30,14 @@
   <div id="message" role="status" aria-live="polite"></div>
 
   <script>
-    // 設定
-    const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
+    // ===== 設定（ここだけ修正）=====
+    const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";  // スペースなし
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg"; // スペースなし
     const UID = "ABC123";
-    const TOTAL_REFILLS = 83;         // 全体の使用可能回数
-    const MAX_USES_PER_DAY = 3;       // 1日最大使用回数
+    const TOTAL_REFILLS = 83;
+    const MAX_USES_PER_DAY = 3;
+    // ==============================
 
-    // Supabaseクライアント
     const client = axios.create({
       baseURL: `${SUPABASE_URL}/rest/v1`,
       headers: {
@@ -46,13 +46,12 @@
       },
     });
 
-    // JSTの日付文字列 (YYYY-MM-DD)
+    // JSTの日付
     function getJSTDateString(date = new Date()) {
       const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
       return jst.toISOString().split("T")[0];
     }
 
-    // JSTの範囲をUTCに変換（Supabase用）
     function getTodayUTCRange() {
       const today = getJSTDateString();
       const start = new Date(today + "T00:00:00+09:00").toISOString();
@@ -60,7 +59,6 @@
       return { start, end };
     }
 
-    // 今日の使用回数を取得
     async function getTodayUses() {
       try {
         const { start, end } = getTodayUTCRange();
@@ -72,12 +70,11 @@
         });
         return res.data.length;
       } catch (e) {
-        console.warn("今日の使用回数取得失敗:", e.message);
+        console.warn("今日の使用回数取得失敗:", e.response?.data || e.message);
         return 0;
       }
     }
 
-    // 総使用回数を取得
     async function getTotalUses() {
       try {
         const res = await client.get(`/detergent_logs`, {
@@ -88,18 +85,19 @@
         });
         return res.data.length;
       } catch (e) {
-        console.warn("総使用回数取得失敗:", e.message);
+        console.warn("総使用回数取得失敗:", e.response?.data || e.message);
         return 0;
       }
     }
 
-    // 使用ログを記録
     async function logUse() {
       try {
-        await client.post(`/detergent_logs`, {
+        const now = new Date().toISOString(); // 正しいISO形式
+
+        const res = await client.post(`/detergent_logs`, {
           user_id: UID,
           amount_ml: 22,
-          used_at: new Date().toISOString()
+          used_at: now
         }, {
           headers: {
             'Content-Type': 'application/json',
@@ -107,14 +105,22 @@
             Authorization: `Bearer ${SUPABASE_KEY}`
           }
         });
+
+        console.log("ログ記録成功:", res.data);
         return true;
       } catch (e) {
-        console.error("ログ記録失敗:", e);
+        // 🔥 エラーの詳細を確認
+        console.error("ログ記録失敗:", {
+          status: e.response?.status,
+          data: e.response?.data,
+          message: e.message,
+          url: `${SUPABASE_URL}/rest/v1/detergent_logs`,
+          key: SUPABASE_KEY.length,
+        });
         return false;
       }
     }
 
-    // UIを更新
     function updateUI(remaining, todayRemaining) {
       document.getElementById("remaining").textContent = remaining;
       const percent = Math.max(0, (remaining / TOTAL_REFILLS) * 100);
@@ -122,7 +128,6 @@
       bar.style.width = percent + "%";
       bar.textContent = Math.round(percent) + "%";
 
-      // メッセージ
       if (remaining <= 10) {
         showMessage(`⚠️ 残り${remaining}回です。補充をご検討ください。`, true);
       } else if (remaining <= TOTAL_REFILLS / 2) {
@@ -131,7 +136,6 @@
         showMessage(`残り${remaining}回使えます。`);
       }
 
-      // 本日の残り回数
       if (todayRemaining > 0) {
         showMessage(`本日あと ${todayRemaining} 回 使用可能です。`, false, true);
       } else {
@@ -139,7 +143,6 @@
       }
     }
 
-    // メッセージ表示
     function showMessage(text, warning = false, append = false) {
       const msg = document.getElementById("message");
       if (!append) msg.textContent = text;
@@ -147,7 +150,6 @@
       msg.className = warning ? "warning" : "";
     }
 
-    // 使用処理
     async function handleUse() {
       const btn = document.getElementById("use-btn");
       btn.disabled = true;
@@ -162,27 +164,24 @@
 
         const success = await logUse();
         if (!success) {
-          showMessage("使用の記録に失敗しました。", true);
+          showMessage("使用の記録に失敗しました。詳細はコンソールを確認", true);
           return;
         }
 
-        // 再度取得して整合性を保つ
-        const newTotal = await getTotalUses();
-        const newToday = await getTodayUses();
-        const remaining = Math.max(0, TOTAL_REFILLS - newTotal);
-        const remainingToday = MAX_USES_PER_DAY - newToday;
+        const [totalUses, todayUsesNew] = await Promise.all([getTotalUses(), getTodayUses()]);
+        const remaining = Math.max(0, TOTAL_REFILLS - totalUses);
+        const remainingToday = MAX_USES_PER_DAY - todayUsesNew;
 
         updateUI(remaining, remainingToday);
 
       } catch (e) {
-        showMessage("エラーが発生しました: " + e.message, true);
+        showMessage("予期しないエラー: " + e.message, true);
       } finally {
         btn.disabled = false;
         btn.textContent = "使用する";
       }
     }
 
-    // CSVダウンロード
     async function downloadCSV() {
       const btn = document.getElementById("download-btn");
       btn.disabled = true;
@@ -232,7 +231,6 @@
       }
     }
 
-    // 初期化
     async function init() {
       try {
         const [totalUses, todayUses] = await Promise.all([
@@ -244,21 +242,17 @@
         const remainingToday = MAX_USES_PER_DAY - todayUses;
 
         updateUI(remaining, remainingToday);
-
-        // 本日回数未上限なら使用ボタンを有効化
         document.getElementById("use-btn").disabled = todayUses >= MAX_USES_PER_DAY;
 
       } catch (e) {
-        showMessage("初期化に失敗しました。", true);
-        console.error(e);
+        showMessage("初期化失敗。コンソールを確認", true);
+        console.error("Init error:", e);
       }
     }
 
-    // イベント登録
     document.getElementById("use-btn").addEventListener("click", handleUse);
     document.getElementById("download-btn").addEventListener("click", downloadCSV);
 
-    // 初期化
     init();
   </script>
 </body>
