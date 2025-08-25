@@ -11,43 +11,89 @@
     .bar { height: 100%; background: #2e7d32; width: 0%; transition: width 0.6s ease; color: #fff; display:flex; align-items:center; justify-content:center; font-weight:bold; }
     button { padding: 15px 30px; font-size: 18px; margin: 20px; background:#1976d2; color:#fff; border:none; border-radius:6px; cursor:pointer; }
     button:hover { background:#1565c0; }
+    button:disabled { background:#999; cursor: not-allowed; }
     #message { margin-top: 15px; font-size: 16px; color: #333; }
     #message.warning { color: #d32f2f; font-weight:bold; }
     #download-btn { background: #4caf50; }
     #download-btn:hover { background: #388e3c; }
+    #use-btn { background: #ff9800; }
+    #use-btn:hover { background: #f57c00; }
   </style>
 </head>
 <body>
   <h1>部屋干しスーパークリーン</h1>
   <p>残り: <span id="remaining">読み込み中...</span> 回</p>
   <div class="progress"><div class="bar" id="bar">0%</div></div>
+  <button id="use-btn" disabled>使用する</button>
   <button id="download-btn">履歴をCSVでダウンロード</button>
   <p><small>※1回の使用量: 22ml</small></p>
   <div id="message" role="status" aria-live="polite"></div>
 
   <script>
+    // 設定
     const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
     const UID = "ABC123";
-    const USER_EMAIL = "rapicak@gmail.com";
-    const MAX_USES_PER_DAY = 3; // 1日あたりの最大使用回数
-    const TOTAL = 83;
+    const TOTAL_REFILLS = 83;         // 全体の使用可能回数
+    const MAX_USES_PER_DAY = 3;       // 1日最大使用回数
 
+    // Supabaseクライアント
     const client = axios.create({
-      baseURL: SUPABASE_URL + "/rest/v1",
+      baseURL: `${SUPABASE_URL}/rest/v1`,
       headers: {
         apikey: SUPABASE_KEY,
         Authorization: `Bearer ${SUPABASE_KEY}`,
       },
     });
 
-    // JSTの日付 (YYYY-MM-DD)
+    // JSTの日付文字列 (YYYY-MM-DD)
     function getJSTDateString(date = new Date()) {
       const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
       return jst.toISOString().split("T")[0];
     }
 
-    // ログ保存
+    // JSTの範囲をUTCに変換（Supabase用）
+    function getTodayUTCRange() {
+      const today = getJSTDateString();
+      const start = new Date(today + "T00:00:00+09:00").toISOString();
+      const end = new Date(today + "T23:59:59+09:00").toISOString();
+      return { start, end };
+    }
+
+    // 今日の使用回数を取得
+    async function getTodayUses() {
+      try {
+        const { start, end } = getTodayUTCRange();
+        const res = await client.get(`/detergent_logs`, {
+          params: {
+            select: 'id',
+            and: `user_id.eq.${UID},used_at.gte.${start},used_at.lt.${end}`
+          }
+        });
+        return res.data.length;
+      } catch (e) {
+        console.warn("今日の使用回数取得失敗:", e.message);
+        return 0;
+      }
+    }
+
+    // 総使用回数を取得
+    async function getTotalUses() {
+      try {
+        const res = await client.get(`/detergent_logs`, {
+          params: {
+            select: 'id',
+            user_id: `eq.${UID}`
+          }
+        });
+        return res.data.length;
+      } catch (e) {
+        console.warn("総使用回数取得失敗:", e.message);
+        return 0;
+      }
+    }
+
+    // 使用ログを記録
     async function logUse() {
       try {
         await client.post(`/detergent_logs`, {
@@ -61,85 +107,94 @@
             Authorization: `Bearer ${SUPABASE_KEY}`
           }
         });
+        return true;
       } catch (e) {
-        console.warn("ログ記録失敗:", e.message);
+        console.error("ログ記録失敗:", e);
+        return false;
       }
     }
 
-    // 今日の使用回数を取得
-    async function getTodayUsesDB() {
-      try {
-        const res = await client.get(`/detergent_logs?user_id=eq.${UID}&order=used_at`);
-        const today = getJSTDateString();
-        const todayLogs = res.data.filter(log => {
-          const jst = new Date(new Date(log.used_at).getTime() + 9*60*60*1000);
-          return getJSTDateString(jst) === today;
-        });
-        return todayLogs.length;
-      } catch (e) {
-        console.warn("getTodayUsesDB失敗:", e.message);
-        return 0;
+    // UIを更新
+    function updateUI(remaining, todayRemaining) {
+      document.getElementById("remaining").textContent = remaining;
+      const percent = Math.max(0, (remaining / TOTAL_REFILLS) * 100);
+      const bar = document.getElementById("bar");
+      bar.style.width = percent + "%";
+      bar.textContent = Math.round(percent) + "%";
+
+      // メッセージ
+      if (remaining <= 10) {
+        showMessage(`⚠️ 残り${remaining}回です。補充をご検討ください。`, true);
+      } else if (remaining <= TOTAL_REFILLS / 2) {
+        showMessage(`残り${remaining}回になりました（半分以下）。`, true);
+      } else {
+        showMessage(`残り${remaining}回使えます。`);
+      }
+
+      // 本日の残り回数
+      if (todayRemaining > 0) {
+        showMessage(`本日あと ${todayRemaining} 回 使用可能です。`, false, true);
+      } else {
+        showMessage(`本日の使用回数上限に達しました。`, true, true);
       }
     }
 
-    // 初期読み込み
-    async function load() {
-      try {
-        const res = await client.get(`/detergent_usage?id=eq.${UID}`);
-        if (res.data.length === 0) {
-          await client.post(`/detergent_usage`, { 
-            id: UID, 
-            email: USER_EMAIL, 
-            current_uses: 0, 
-            notified_half: false, 
-            notified_low: false 
-          });
-          updateUI(TOTAL);
-        } else {
-          const item = res.data[0];
-          const remaining = TOTAL - item.current_uses;
-          updateUI(remaining);
-        }
-      } catch (e) {
-        showMessage("読み込み失敗: " + e.message, true);
-      }
+    // メッセージ表示
+    function showMessage(text, warning = false, append = false) {
+      const msg = document.getElementById("message");
+      if (!append) msg.textContent = text;
+      else msg.textContent += `\n${text}`;
+      msg.className = warning ? "warning" : "";
     }
 
     // 使用処理
-    async function autoUseIfWithinLimit() {
+    async function handleUse() {
+      const btn = document.getElementById("use-btn");
+      btn.disabled = true;
+      btn.textContent = "処理中...";
+
       try {
-        const todayUses = await getTodayUsesDB();
-        if (todayUses < MAX_USES_PER_DAY) {
-          const res = await client.get(`/detergent_usage?id=eq.${UID}`);
-          let item = res.data[0];
-
-          const newUses = item.current_uses + 1;
-          const remaining = TOTAL - newUses;
-
-          await client.patch(`/detergent_usage?id=eq.${UID}`, { current_uses: newUses });
-          await logUse();
-
-          updateUI(remaining);
-
-          const remainingTodayUses = MAX_USES_PER_DAY - (todayUses + 1);
-          if (remainingTodayUses > 0) {
-            showMessage(`本日あと ${remainingTodayUses} 回 使用可能です。`);
-          } else {
-            showMessage(`本日の使用回数上限に達しました。`, true);
-          }
-        } else {
+        const todayUses = await getTodayUses();
+        if (todayUses >= MAX_USES_PER_DAY) {
           showMessage(`本日の使用回数上限 (${MAX_USES_PER_DAY}回) に達しました。`, true);
+          return;
         }
+
+        const success = await logUse();
+        if (!success) {
+          showMessage("使用の記録に失敗しました。", true);
+          return;
+        }
+
+        // 再度取得して整合性を保つ
+        const newTotal = await getTotalUses();
+        const newToday = await getTodayUses();
+        const remaining = Math.max(0, TOTAL_REFILLS - newTotal);
+        const remainingToday = MAX_USES_PER_DAY - newToday;
+
+        updateUI(remaining, remainingToday);
+
       } catch (e) {
-        showMessage("カウントダウンに失敗しました。", true);
+        showMessage("エラーが発生しました: " + e.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "使用する";
       }
     }
 
     // CSVダウンロード
     async function downloadCSV() {
+      const btn = document.getElementById("download-btn");
+      btn.disabled = true;
+      btn.textContent = "準備中...";
+
       try {
-        const res = await client.get(`/detergent_logs?user_id=eq.${UID}&order=used_at`, {
-          params: { select: 'used_at, amount_ml' }
+        const res = await client.get(`/detergent_logs`, {
+          params: {
+            user_id: `eq.${UID}`,
+            order: 'used_at',
+            select: 'used_at, amount_ml'
+          }
         });
 
         if (res.data.length === 0) {
@@ -149,12 +204,13 @@
 
         let csv = "日時,使用量(ml)\n";
         res.data.forEach(log => {
-          const jst = new Date(new Date(log.used_at).getTime() + 9*60*60*1000);
-          const date = jst.toLocaleString('ja-JP', {
+          const utc = new Date(log.used_at);
+          const jst = new Date(utc.getTime() + 9 * 60 * 60 * 1000);
+          const dateStr = jst.toLocaleString('ja-JP', {
             year: 'numeric', month: '2-digit', day: '2-digit',
             hour: '2-digit', minute: '2-digit', second: '2-digit'
-          });
-          csv += `"${date}",${log.amount_ml}\n`;
+          }).replace(/\//g, '-');
+          csv += `"${dateStr}",${log.amount_ml}\n`;
         });
 
         const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
@@ -168,35 +224,42 @@
         showMessage("CSVをダウンロードしました。");
       } catch (e) {
         showMessage("履歴の取得に失敗しました。", true);
+      } finally {
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.textContent = "履歴をCSVでダウンロード";
+        }, 1000);
       }
     }
 
-    function updateUI(remaining) {
-      document.getElementById("remaining").textContent = remaining;
-      const percent = Math.max(0, (remaining / TOTAL) * 100);
-      const bar = document.getElementById("bar");
-      bar.style.width = percent + "%";
-      bar.textContent = Math.round(percent) + "%";
+    // 初期化
+    async function init() {
+      try {
+        const [totalUses, todayUses] = await Promise.all([
+          getTotalUses(),
+          getTodayUses()
+        ]);
 
-      if (remaining <= 10) {
-        showMessage(`⚠️ 残り${remaining}回です。補充をご検討ください。`, true);
-      } else if (remaining <= TOTAL/2) {
-        showMessage(`残り${remaining}回になりました（半分以下）。`, true);
-      } else {
-        showMessage(`残り${remaining}回使えます。`);
+        const remaining = Math.max(0, TOTAL_REFILLS - totalUses);
+        const remainingToday = MAX_USES_PER_DAY - todayUses;
+
+        updateUI(remaining, remainingToday);
+
+        // 本日回数未上限なら使用ボタンを有効化
+        document.getElementById("use-btn").disabled = todayUses >= MAX_USES_PER_DAY;
+
+      } catch (e) {
+        showMessage("初期化に失敗しました。", true);
+        console.error(e);
       }
     }
 
-    function showMessage(text, warning = false) {
-      const msg = document.getElementById("message");
-      msg.textContent = text;
-      msg.className = warning ? "warning" : "";
-    }
-
+    // イベント登録
+    document.getElementById("use-btn").addEventListener("click", handleUse);
     document.getElementById("download-btn").addEventListener("click", downloadCSV);
 
-    // ページ読み込み時
-    load().then(autoUseIfWithinLimit);
+    // 初期化
+    init();
   </script>
 </body>
 </html>
