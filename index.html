@@ -1,456 +1,100 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <base target="_top">
-  <title>部屋干しスーパークリーン｜洗剤カウンター</title>
-
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
-
+  <title>洗剤カウンター</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <style>
-    :root {
-      --primary: #4CAF50;
-      --primary-dark: #388E3C;
-      --primary-light: #C8E6C9;
-      --warning: #FF9800;
-      --error: #F44336;
-      --text-dark: #212121;
-      --text-light: #757575;
-      --bg-light: #f5f5f5;
-      --bg-surface: #ffffff;
-      --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
-      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
-      --radius-lg: 1rem;
-      --radius-md: 0.5rem;
-      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      --spacing-2: 0.5rem;
-      --spacing-4: 1rem;
-      --spacing-6: 1.5rem;
-      --spacing-8: 2rem;
-      --text-xs: 0.75rem;
-      --text-sm: 0.875rem;
-      --text-base: 1rem;
-      --text-lg: 1.25rem;
-      --text-xl: 1.5rem;
-      --text-2xl: 2rem;
-      --text-3xl: 2.5rem;
-
-      /* トースト用の変数 */
-      --toast-bg: var(--text-dark);
-      --toast-text: #ffffff;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --text-dark: #f5f5f5;
-        --text-light: #bdbdbd;
-        --bg-light: #121212;
-        --bg-surface: #1e1e1e;
-        --primary-light: #0a3d0b;
-
-        /* ダークモード用トースト */
-        --toast-bg: #333;
-        --toast-text: #ffffff;
-      }
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    body {
-      font-family: 'Noto Sans JP', 'Inter', sans-serif;
-      background: var(--bg-light);
-      color: var(--text-dark);
-      line-height: 1.6;
-      padding: var(--spacing-4);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 480px;
-      background: var(--bg-surface);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-md);
-      overflow: hidden;
-      transition: transform 0.2s;
-    }
-
-    .container:active { transform: scale(0.98); }
-
-    .header {
-      background: var(--primary);
-      color: white;
-      padding: var(--spacing-6);
-      text-align: center;
-      border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .header h1 {
-      font-size: var(--text-2xl);
-      font-weight: 700;
-      margin-bottom: var(--spacing-2);
-    }
-
-    .header p {
-      font-size: var(--text-sm);
-      opacity: 0.9;
-    }
-
-    .content {
-      padding: var(--spacing-6);
-      text-align: center;
-    }
-
-    .remaining-container {
-      margin-bottom: var(--spacing-6);
-    }
-
-    .remaining-label {
-      font-size: var(--text-lg);
-      color: var(--text-light);
-      margin-bottom: var(--spacing-2);
-    }
-
-    .remaining-value {
-      font-size: var(--text-3xl);
-      font-weight: 700;
-      color: var(--primary);
-    }
-
-    .progress-container {
-      background: var(--primary-light);
-      border-radius: var(--radius-lg);
-      padding: var(--spacing-2);
-      margin-bottom: var(--spacing-6);
-      position: relative;
-      overflow: hidden;
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
-    }
-
-    .progress-bar {
-      height: 24px;
-      background: var(--primary);
-      border-radius: var(--radius-md);
-      width: 0%;
-      transition: width 0.6s ease-out;
-      position: relative;
-    }
-
-    .progress-text {
-      position: absolute;
-      width: 100%;
-      top: 50%;
-      left: 0;
-      transform: translateY(-50%);
-      color: white;
-      font-size: var(--text-sm);
-      font-weight: 600;
-      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--spacing-1);
-      padding: var(--spacing-2) var(--spacing-6);
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: var(--radius-md);
-      font-size: var(--text-lg);
-      font-weight: 600;
-      cursor: pointer;
-      transition: var(--transition);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .btn:hover { 
-      background: var(--primary-dark); 
-      transform: translateY(-2px); 
-      box-shadow: var(--shadow-md); 
-    }
-    .btn:active { transform: translateY(0); }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-    .warning {
-      color: var(--warning);
-      font-weight: 600;
-      margin: var(--spacing-4) 0;
-      font-size: var(--text-lg);
-    }
-
-    .low-usage {
-      color: var(--error);
-      font-weight: 700;
-      font-size: var(--text-xl);
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.7; }
-      100% { opacity: 1; }
-    }
-
-    .disclaimer {
-      font-size: var(--text-xs);
-      color: var(--text-light);
-      margin-top: var(--spacing-4);
-    }
-
-    .toast {
-      position: fixed;
-      bottom: var(--spacing-6);
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--toast-bg);
-      color: var(--toast-text);
-      padding: var(--spacing-2) var(--spacing-4);
-      border-radius: var(--radius-md);
-      font-size: var(--text-sm);
-      box-shadow: var(--shadow-md);
-      opacity: 0;
-      transition: opacity 0.3s;
-      z-index: 1000;
-    }
-
-    .toast.show {
-      opacity: 1;
-    }
-
-    @media (max-width: 480px) {
-      .header h1 { font-size: var(--text-xl); }
-      .remaining-value { font-size: var(--text-2xl); }
-      .btn { font-size: var(--text-base); padding: var(--spacing-2) var(--spacing-4); }
-    }
+    body { font-family: sans-serif; text-align: center; margin: 40px; }
+    .progress { width: 100%; background: #eee; height: 20px; border-radius: 10px; overflow: hidden; }
+    .bar { height: 100%; background: #4CAF50; width: 0%; }
+    button { padding: 15px 30px; font-size: 18px; margin: 20px; }
   </style>
 </head>
 <body>
-
-  <div class="container" role="main" aria-labelledby="app-title">
-    <header class="header">
-      <h1 id="app-title">部屋干しスーパークリーン</h1>
-      <p>洗剤使用カウンター</p>
-    </header>
-
-    <div class="content">
-      <div class="remaining-container">
-        <p class="remaining-label">残り使用可能回数</p>
-        <p class="remaining-value" id="remaining">読み込み中...</p>
-      </div>
-
-      <div class="progress-container">
-        <div class="progress-bar" id="bar">
-          <span class="progress-text" id="progressText">0%</span>
-        </div>
-      </div>
-
-      <button id="useBtn" class="btn" aria-label="洗剤を1回使用済みにする">
-        使用済みにする
-      </button>
-
-      <p id="warning" class="warning" style="display:none;"></p>
-      <p class="disclaimer">※1回の使用量：22ml</p>
-    </div>
-  </div>
-
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <h1>部屋干しスーパークリーン</h1>
+  <p>残り: <span id="remaining">読み込み中...</span> 回</p>
+  <div class="progress"><div class="bar" id="bar"></div></div>
+  <button onclick="useOnce()">使用済みにする</button>
+  <p><small>※1回の使用量: 22ml</small></p>
 
   <script>
-    // ================================
-    // 設定（環境に応じて変更）
-    // ================================
     const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
     const UID = "ABC123";
     const USER_EMAIL = "rapicak@gmail.com";
-    const MAX_USES = 83;
 
-    // DOM要素
-    const remainingEl = document.getElementById('remaining');
-    const barEl = document.getElementById('bar');
-    const progressTextEl = document.getElementById('progressText');
-    const useBtn = document.getElementById('useBtn');
-    const warningEl = document.getElementById('warning');
-    const toastEl = document.getElementById('toast');
-
-    // ================================
-    // ツール関数
-    // ================================
-    const showToast = (message) => {
-      toastEl.textContent = message;
-      toastEl.classList.add('show');
-      setTimeout(() => toastEl.classList.remove('show'), 3000);
-    };
-
-    const updateUI = (remaining, currentUses) => {
-      const percent = Math.max(0, Math.min(100, (remaining / MAX_USES) * 100));
-      remainingEl.textContent = remaining;
-      barEl.style.width = `${percent}%`;
-      progressTextEl.textContent = `${Math.round(percent)}%`;
-
-      if (remaining <= 10) {
-        warningEl.textContent = `⚠️ 残りわずか！${remaining}回`;
-        warningEl.className = 'warning low-usage';
-        warningEl.style.display = 'block';
-      } else if (remaining <= 41 && !warningEl.textContent.includes('半分')) {
-        warningEl.textContent = `💡 残り半分になりました`;
-        warningEl.className = 'warning';
-        warningEl.style.display = 'block';
-      } else if (remaining > 41) {
-        warningEl.style.display = 'none';
-      }
-
-      if (remaining <= 0) {
-        useBtn.disabled = true;
-        useBtn.textContent = '在庫切れ';
-      }
-    };
-
-    // ================================
-    // Supabase APIラッパー（204対応）
-    // ================================
-    const supabase = {
-      async get() {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/detergent_usage?id=eq.${UID}`, {
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`
-          }
-        });
-        if (!res.ok && res.status !== 404) throw new Error(`読み込み失敗: ${res.status}`);
-        const text = await res.text();
-        return text ? JSON.parse(text) : [];
+    const client = axios.create({
+      baseURL: SUPABASE_URL + "/rest/v1",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
       },
+    });
 
-      async insert() {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/detergent_usage`, {
-          method: 'POST',
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            id: UID,
-            email: USER_EMAIL,
-            current_uses: 0,
-            notified_half: false,
-            notified_low: false
-          })
-        });
-        if (!res.ok) throw new Error(`登録失敗: ${res.status}`);
-        const text = await res.text();
-        return text ? JSON.parse(text) : { success: true };
-      },
-
-      async update(uses, notified_half = null, notified_low = null) {
-        const body = { current_uses: uses };
-        if (notified_half !== null) body.notified_half = notified_half;
-        if (notified_low !== null) body.notified_low = notified_low;
-
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/detergent_usage?id=eq.${UID}`, {
-          method: 'PATCH',
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(body)
-        });
-
-        if (res.status === 204) return { success: true };
-        if (!res.ok) throw new Error(`更新失敗: ${res.status}`);
-        const text = await res.text();
-        return text ? JSON.parse(text) : { success: true };
-      }
-    };
-
-    // ================================
-    // メイン処理
-    // ================================
     async function load() {
       try {
-        let data = await supabase.get();
-
-        if (data.length === 0) {
-          await supabase.insert();
-          data = await supabase.get();
+        const res = await client.get(`/detergent_usage?id=eq.${UID}`);
+        if (res.data.length === 0) {
+          await client.post(`/detergent_usage`, { id: UID, email: USER_EMAIL });
+          document.getElementById("remaining").textContent = "83";
+          document.getElementById("bar").style.width = "100%";
+        } else {
+          const item = res.data[0];
+          const remaining = 83 - item.current_uses;
+          document.getElementById("remaining").textContent = remaining;
+          document.getElementById("bar").style.width = (remaining / 83 * 100) + "%";
         }
-
-        const item = data[0];
-        const remaining = MAX_USES - item.current_uses;
-        updateUI(remaining, item.current_uses);
       } catch (e) {
-        remainingEl.textContent = "エラー";
-        showToast("データ読み込み失敗");
-        console.error(e);
+        alert("読み込み失敗: " + e.message);
       }
     }
 
     async function useOnce() {
-      if (!navigator.onLine) {
-        showToast("オフラインです");
-        return;
-      }
-
       try {
-        useBtn.disabled = true;
-        useBtn.textContent = "処理中...";
-
-        const data = await supabase.get();
-        if (data.length === 0) throw new Error("データがありません");
-
-        const item = data[0];
+        const res = await client.get(`/detergent_usage?id=eq.${UID}`);
+        const item = res.data[0];
         const newUses = item.current_uses + 1;
-        const remaining = MAX_USES - newUses;
+        const remaining = 83 - newUses;
 
-        await supabase.update(newUses);
+        await client.patch(`/detergent_usage?id=eq.${UID}`, { current_uses: newUses });
 
-        // メール通知（必要なら）
+        // ✅ ブラウザから直接fetchしない！
+        // 代わりに、自分のVercelのAPIを呼ぶ
         if (remaining <= 41 && !item.notified_half) {
-          // ※ 実際には /api/send-email は別バックエンドが必要
-          console.log("半分通知");
-          await supabase.update(newUses, true, item.notified_low);
+          await fetch(`/api/send-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "半分",
+              remaining,
+              to: USER_EMAIL
+            })
+          });
+          await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_half: true });
         }
 
         if (remaining <= 10 && !item.notified_low) {
-          console.log("残りわずか通知");
-          await supabase.update(newUses, item.notified_half, true);
+          await fetch(`/api/send-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type: "残りわずか",
+              remaining,
+              to: USER_EMAIL
+            })
+          });
+          await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_low: true });
         }
 
-        updateUI(remaining, newUses);
-        showToast(`${remaining}回残っています`);
-
+        alert(`使用登録しました。残り${remaining}回`);
+        location.reload();
       } catch (e) {
-        showToast("更新失敗");
-        console.error(e);
-      } finally {
-        useBtn.disabled = false;
-        useBtn.textContent = "使用済みにする";
+        alert("エラー: " + e.message);
       }
     }
 
-    // ================================
-    // イベント登録
-    // ================================
-    useBtn.addEventListener('click', useOnce);
-    useBtn.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        useOnce();
-      }
-    });
-
-    // 初期読み込み
     load();
   </script>
 </body>
