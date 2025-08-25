@@ -172,7 +172,7 @@
           // 使用可能回数の表示更新
           const remainingTodayUses = MAX_USES_PER_DAY - getTodayUses();
           if (remainingTodayUses > 0) {
-           showMessage(`本日あと ${remainingTodayUses} 回 使用可能です。\n残り ${remaining} 回分。`);
+           showMessage(`本日あと ${remainingTodayUses} 回 使用可能です。`);
           } else {
             showMessage(`本日の使用回数上限に達しました。`, true);
           }
@@ -186,7 +186,7 @@
         const res = await client.get(`/detergent_usage?id=eq.${UID}`);
         if (res.data.length > 0) {
           const remaining = TOTAL - res.data[0].current_uses;
-          showMessage(`本日の使用回数上限 (${MAX_USES_PER_DAY}回) に達しました。残り ${remaining} 回分。`, true);
+          showMessage(`本日の使用回数上限 (${MAX_USES_PER_DAY}回) に達しました。`, true);
         }
       }
     }
