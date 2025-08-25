@@ -2,7 +2,8 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <!-- 📱 ズーム禁止設定 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>洗剤カウンター</title>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <style>
@@ -28,6 +29,7 @@
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
     const UID = "ABC123";
     const USER_EMAIL = "rapicak@gmail.com";
+    const TOTAL = 83;
 
     const client = axios.create({
       baseURL: SUPABASE_URL + "/rest/v1",
@@ -36,8 +38,6 @@
         Authorization: `Bearer ${SUPABASE_KEY}`,
       },
     });
-
-    const TOTAL = 83;
 
     async function load() {
       try {
@@ -65,7 +65,7 @@
         await client.patch(`/detergent_usage?id=eq.${UID}`, { current_uses: newUses });
         updateUI(remaining);
 
-        // 通知処理（半分以下 / 残りわずか）
+        // 通知処理
         if (remaining <= TOTAL/2 && !item.notified_half) {
           await fetch(`/api/send-email`, {
             method: "POST",
@@ -100,7 +100,7 @@
       } else if (remaining <= TOTAL/2) {
         showMessage(`残り${remaining}回になりました（半分以下）。`, true);
       } else {
-        showMessage(`残り${remaining}回ご利用いただけます。`);
+        showMessage(`使用を記録しました。残り${remaining}回ご利用いただけます。`);
       }
     }
 
