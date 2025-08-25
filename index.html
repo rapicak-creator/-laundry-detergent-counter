@@ -2,14 +2,14 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>洗剤カウンター</title>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <style>
     body { font-family: sans-serif; text-align: center; margin: 40px; }
     .progress { width: 100%; background: #eee; height: 24px; border-radius: 12px; overflow: hidden; margin: 20px 0; }
     .bar { height: 100%; background: #2e7d32; width: 0%; transition: width 0.6s ease; color: #fff; display:flex; align-items:center; justify-content:center; font-weight:bold; }
-    button { padding: 12px 25px; font-size: 16px; margin: 10px; background:#1976d2; color:#fff; border:none; border-radius:6px; cursor:pointer; }
+    button { padding: 15px 30px; font-size: 18px; margin: 20px; background:#1976d2; color:#fff; border:none; border-radius:6px; cursor:pointer; }
     button:hover { background:#1565c0; }
     #message { margin-top: 15px; font-size: 16px; color: #333; }
     #message.warning { color: #d32f2f; font-weight:bold; }
@@ -20,16 +20,14 @@
   <p>残り: <span id="remaining">読み込み中...</span> 回</p>
   <div class="progress"><div class="bar" id="bar">0%</div></div>
   <button id="use-btn">使用済みにする</button>
-  <button id="csv-btn">履歴CSVダウンロード</button>
   <p><small>※1回の使用量: 22ml</small></p>
   <div id="message" role="status" aria-live="polite"></div>
 
   <script>
     const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";
-    const SUPABASE_KEY = "YOUR_SERVICE_ROLE_KEY"; // ⚠️ セキュリティのためサーバー経由推奨
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
     const UID = "ABC123";
     const USER_EMAIL = "rapicak@gmail.com";
-    const TOTAL = 83;
 
     const client = axios.create({
       baseURL: SUPABASE_URL + "/rest/v1",
@@ -38,6 +36,8 @@
         Authorization: `Bearer ${SUPABASE_KEY}`,
       },
     });
+
+    const TOTAL = 83;
 
     async function load() {
       try {
@@ -62,19 +62,29 @@
         const newUses = item.current_uses + 1;
         const remaining = TOTAL - newUses;
 
-        // 使用回数更新
         await client.patch(`/detergent_usage?id=eq.${UID}`, { current_uses: newUses });
-
-        // 履歴追加
-        await client.post(`/detergent_history`, {
-          uid: UID,
-          total_uses: newUses
-        });
-
         updateUI(remaining);
 
+        // 通知処理（半分以下 / 残りわずか）
+        if (remaining <= TOTAL/2 && !item.notified_half) {
+          await fetch(`/api/send-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "半分", remaining, to: USER_EMAIL })
+          });
+          await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_half: true });
+        }
+        if (remaining <= 10 && !item.notified_low) {
+          await fetch(`/api/send-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "残りわずか", remaining, to: USER_EMAIL })
+          });
+          await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_low: true });
+        }
+
       } catch (e) {
-        showMessage("更新に失敗しました: " + e.message, true);
+        showMessage("更新に失敗しました。ネットワークを確認してください。", true);
       }
     }
 
@@ -90,7 +100,7 @@
       } else if (remaining <= TOTAL/2) {
         showMessage(`残り${remaining}回になりました（半分以下）。`, true);
       } else {
-        showMessage(`使用を記録しました。残り${remaining}回ご利用いただけます。`);
+        showMessage(`残り${remaining}回ご利用いただけます。`);
       }
     }
 
@@ -100,36 +110,7 @@
       msg.className = warning ? "warning" : "";
     }
 
-    // 📌 CSV ダウンロード
-    async function downloadCSV() {
-      try {
-        const res = await client.get(`/detergent_history?uid=eq.${UID}&select=*`);
-        const rows = res.data;
-
-        if (!rows.length) {
-          showMessage("履歴がありません", true);
-          return;
-        }
-
-        let csv = "id,uid,used_at,total_uses\n";
-        rows.forEach(r => {
-          csv += `${r.id},${r.uid},${r.used_at},${r.total_uses}\n`;
-        });
-
-        const blob = new Blob([csv], { type: "text/csv" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "detergent_history.csv";
-        a.click();
-        URL.revokeObjectURL(url);
-      } catch (e) {
-        showMessage("CSV取得失敗: " + e.message, true);
-      }
-    }
-
     document.getElementById("use-btn").addEventListener("click", useOnce);
-    document.getElementById("csv-btn").addEventListener("click", downloadCSV);
     load();
   </script>
 </body>
