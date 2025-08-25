@@ -699,4 +699,447 @@
                     headers: {
                         apikey: CONFIG.SUPABASE_KEY,
                         Authorization: `Bearer ${CONFIG.SUPABASE_KEY}`,
-                        'Content-Type': 'application
+                        'Content-Type': 'application/json'
+                    },
+                    timeout: 10000
+                });
+            }
+
+            async getUserData() {
+                try {
+                    const { data } = await this.client.get(`/detergent_usage?id=eq.${CONFIG.UID}`);
+                    return data[0] || null;
+                } catch (error) {
+                    console.error('Failed to fetch user data:', error);
+                    throw new Error('データの取得に失敗しました');
+                }
+            }
+
+            async createUser() {
+                try {
+                    const userData = {
+                        id: CONFIG.UID,
+                        email: CONFIG.USER_EMAIL,
+                        current_uses: 0,
+                        notified_half: false,
+                        notified_low: false
+                    };
+                    await this.client.post('/detergent_usage', userData);
+                    return userData;
+                } catch (error) {
+                    console.error('Failed to create user:', error);
+                    throw new Error('ユーザーデータの作成に失敗しました');
+                }
+            }
+
+            async updateUsage(currentUses) {
+                try {
+                    await this.client.patch(`/detergent_usage?id=eq.${CONFIG.UID}`, {
+                        current_uses: currentUses
+                    });
+                } catch (error) {
+                    console.error('Failed to update usage:', error);
+                    throw new Error('使用記録の更新に失敗しました');
+                }
+            }
+
+            async updateNotificationFlag(flag, value) {
+                try {
+                    await this.client.patch(`/detergent_usage?id=eq.${CONFIG.UID}`, {
+                        [flag]: value
+                    });
+                } catch (error) {
+                    console.error('Failed to update notification flag:', error);
+                }
+            }
+
+            async sendNotificationEmail(type, remaining) {
+                try {
+                    await fetch('/api/send-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            type,
+                            remaining,
+                            to: CONFIG.USER_EMAIL
+                        })
+                    });
+                } catch (error) {
+                    console.error('Failed to send notification email:', error);
+                }
+            }
+        }
+
+        // === UI管理クラス ===
+        class UIManager {
+            constructor(elements) {
+                this.elements = elements;
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                // キーボードアクセシビリティ
+                this.elements.useButton.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.elements.useButton.click();
+                    }
+                });
+
+                // フォーカス管理
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Tab') {
+                        document.body.classList.add('using-keyboard');
+                    }
+                });
+
+                document.addEventListener('mousedown', () => {
+                    document.body.classList.remove('using-keyboard');
+                });
+            }
+
+            showLoading() {
+                this.elements.loadingState.hidden = false;
+                this.elements.mainContent.hidden = true;
+                this.elements.loadingState.setAttribute('aria-busy', 'true');
+            }
+
+            hideLoading() {
+                this.elements.loadingState.hidden = true;
+                this.elements.mainContent.hidden = false;
+                this.elements.loadingState.setAttribute('aria-busy', 'false');
+                
+                // フェードインアニメーション
+                this.elements.mainContent.style.opacity = '0';
+                this.elements.mainContent.style.transform = 'translateY(20px)';
+                
+                requestAnimationFrame(() => {
+                    this.elements.mainContent.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+                    this.elements.mainContent.style.opacity = '1';
+                    this.elements.mainContent.style.transform = 'translateY(0)';
+                });
+            }
+
+            updateDisplay(state) {
+                const remaining = CONFIG.TOTAL_USES - state.currentUses;
+                const percentage = remaining > 0 ? (remaining / CONFIG.TOTAL_USES) * 100 : 0;
+                
+                // 数値の更新（アニメーション付き）
+                this.animateNumber(this.elements.remainingCount, parseInt(this.elements.remainingCount.textContent) || 0, remaining);
+                this.animateNumber(this.elements.usedCount, parseInt(this.elements.usedCount.textContent) || 0, state.currentUses);
+                
+                // プログレスバーの更新
+                this.elements.progressFill.style.width = `${percentage}%`;
+                this.elements.progressPercentage.textContent = `${Math.round(percentage)}%`;
+                
+                // プログレスバーの色を状態に応じて変更
+                this.elements.progressFill.classList.remove('detergent-manager__progress-fill--warning', 'detergent-manager__progress-fill--danger');
+                if (remaining <= 10) {
+                    this.elements.progressFill.classList.add('detergent-manager__progress-fill--danger');
+                } else if (remaining <= CONFIG.TOTAL_USES * CONFIG.NOTIFICATION_THRESHOLDS.HALF) {
+                    this.elements.progressFill.classList.add('detergent-manager__progress-fill--warning');
+                }
+
+                // アクセシビリティ属性の更新
+                this.elements.progressBar.setAttribute('aria-valuenow', remaining);
+                this.elements.progressBar.setAttribute('aria-valuetext', `残り ${remaining} 回分`);
+
+                // ボタンの状態更新
+                this.updateButtonState(state, remaining);
+            }
+
+            animateNumber(element, from, to) {
+                if (from === to) return;
+                
+                const duration = 1000;
+                const startTime = performance.now();
+                
+                const animate = (currentTime) => {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    // イージング関数
+                    const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+                    const current = Math.round(from + (to - from) * easeOutCubic);
+                    
+                    element.textContent = current;
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        element.textContent = to;
+                    }
+                };
+                
+                requestAnimationFrame(animate);
+            }
+
+            updateButtonState(state, remaining) {
+                const isDisabled = state.isProcessing || remaining <= 0;
+                
+                this.elements.useButton.disabled = isDisabled;
+                this.elements.buttonSpinner.hidden = !state.isProcessing;
+                
+                if (remaining <= 0) {
+                    this.elements.buttonText.textContent = '使い切りました';
+                    this.elements.useButton.setAttribute('aria-label', '洗剤を使い切りました');
+                } else if (state.isProcessing) {
+                    this.elements.buttonText.textContent = '記録中...';
+                    this.elements.useButton.setAttribute('aria-label', '使用記録を保存中です');
+                } else {
+                    this.elements.buttonText.textContent = '1回分使用する';
+                    this.elements.useButton.setAttribute('aria-label', '洗剤を1回分使用したことを記録します');
+                }
+            }
+
+            showToast(message, type = 'success') {
+                const toast = document.createElement('div');
+                toast.className = `toast toast--${type}`;
+                toast.setAttribute('role', 'status');
+                toast.setAttribute('aria-live', 'polite');
+                
+                const iconMap = {
+                    success: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"></polyline></svg>',
+                    error: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+                    warning: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>'
+                };
+                
+                toast.innerHTML = `
+                    <div class="toast__icon" style="color: var(--${type}-500);" aria-hidden="true">${iconMap[type]}</div>
+                    <div class="toast__message">${message}</div>
+                `;
+                
+                this.elements.toastContainer.appendChild(toast);
+                
+                // 表示アニメーション
+                requestAnimationFrame(() => {
+                    toast.classList.add('show');
+                });
+                
+                // 5秒後に自動削除
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    toast.addEventListener('transitionend', () => {
+                        if (toast.parentNode) {
+                            toast.parentNode.removeChild(toast);
+                        }
+                    });
+                }, 5000);
+                
+                return toast;
+            }
+
+            showError(message) {
+                this.hideLoading();
+                this.elements.mainContent.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--error-600);">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 1rem;">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                        </svg>
+                        <h2 style="margin: 0 0 1rem; font-size: var(--font-size-lg);">エラーが発生しました</h2>
+                        <p style="margin: 0 0 1rem; color: var(--neutral-600);">${message}</p>
+                        <button onclick="location.reload()" style="padding: 0.5rem 1rem; background: var(--primary-500); color: white; border: none; border-radius: 0.5rem; cursor: pointer;">
+                            再読み込み
+                        </button>
+                    </div>
+                `;
+                this.elements.mainContent.hidden = false;
+            }
+        }
+
+        // === 通知管理クラス ===
+        class NotificationManager {
+            constructor(apiClient) {
+                this.apiClient = apiClient;
+            }
+
+            async checkAndSendNotifications(state) {
+                const remaining = CONFIG.TOTAL_USES - state.currentUses;
+                
+                // 半分使用時の通知
+                if (remaining <= CONFIG.TOTAL_USES * CONFIG.NOTIFICATION_THRESHOLDS.HALF && !state.notifiedHalf) {
+                    try {
+                        await this.apiClient.sendNotificationEmail('半分', remaining);
+                        await this.apiClient.updateNotificationFlag('notified_half', true);
+                        return { ...state, notifiedHalf: true };
+                    } catch (error) {
+                        console.error('Failed to send half notification:', error);
+                    }
+                }
+                
+                // 残りわずか時の通知
+                if (remaining <= CONFIG.NOTIFICATION_THRESHOLDS.LOW && !state.notifiedLow) {
+                    try {
+                        await this.apiClient.sendNotificationEmail('残りわずか', remaining);
+                        await this.apiClient.updateNotificationFlag('notified_low', true);
+                        return { ...state, notifiedLow: true };
+                    } catch (error) {
+                        console.error('Failed to send low notification:', error);
+                    }
+                }
+                
+                return state;
+            }
+        }
+
+        // === メインアプリケーションクラス ===
+        class DetergentStockManager {
+            constructor() {
+                this.state = new AppState();
+                this.apiClient = new APIClient();
+                this.uiManager = new UIManager(elements);
+                this.notificationManager = new NotificationManager(this.apiClient);
+                
+                this.setupEventListeners();
+                this.initialize();
+            }
+
+            setupEventListeners() {
+                // 状態変更の監視
+                this.state.subscribe((state) => {
+                    this.uiManager.updateDisplay(state);
+                });
+
+                // ボタンクリックイベント
+                elements.useButton.addEventListener('click', () => {
+                    this.handleUseOnce();
+                });
+
+                // オンライン/オフライン状態の監視
+                window.addEventListener('online', () => {
+                    this.uiManager.showToast('インターネットに再接続しました', 'success');
+                });
+
+                window.addEventListener('offline', () => {
+                    this.uiManager.showToast('オフラインになりました', 'warning');
+                });
+
+                // エラーハンドリング
+                window.addEventListener('error', (e) => {
+                    console.error('Global error:', e.error);
+                    this.uiManager.showToast('予期しないエラーが発生しました', 'error');
+                });
+
+                window.addEventListener('unhandledrejection', (e) => {
+                    console.error('Unhandled promise rejection:', e.reason);
+                    this.uiManager.showToast('処理中にエラーが発生しました', 'error');
+                });
+            }
+
+            async initialize() {
+                try {
+                    this.uiManager.showLoading();
+                    
+                    let userData = await this.apiClient.getUserData();
+                    
+                    if (!userData) {
+                        userData = await this.apiClient.createUser();
+                        this.uiManager.showToast('新しいアカウントを作成しました', 'success');
+                    }
+                    
+                    this.state.update({
+                        currentUses: userData.current_uses,
+                        notifiedHalf: userData.notified_half,
+                        notifiedLow: userData.notified_low
+                    });
+                    
+                    this.uiManager.hideLoading();
+                    
+                } catch (error) {
+                    console.error('Initialization error:', error);
+                    this.uiManager.showError(error.message);
+                }
+            }
+
+            async handleUseOnce() {
+                if (this.state.isProcessing || (CONFIG.TOTAL_USES - this.state.currentUses) <= 0) {
+                    return;
+                }
+
+                // オプティミスティックUI更新
+                const previousState = { ...this.state };
+                this.state.update({
+                    isProcessing: true,
+                    currentUses: this.state.currentUses + 1
+                });
+
+                try {
+                    // APIリクエスト
+                    await this.apiClient.updateUsage(this.state.currentUses);
+                    
+                    // 通知チェック
+                    const updatedState = await this.notificationManager.checkAndSendNotifications(this.state);
+                    this.state.update(updatedState);
+                    
+                    // 成功フィードバック
+                    this.uiManager.showToast('使用記録を保存しました！', 'success');
+                    
+                    // バイブレーション（対応デバイスのみ）
+                    if ('vibrate' in navigator) {
+                        navigator.vibrate([50, 50, 50]);
+                    }
+                    
+                } catch (error) {
+                    console.error('Use once error:', error);
+                    this.uiManager.showToast(error.message, 'error');
+                    
+                    // ロールバック
+                    this.state.update(previousState);
+                    
+                } finally {
+                    this.state.update({ isProcessing: false });
+                }
+            }
+
+            // パブリックメソッド（デバッグ用）
+            getState() {
+                return { ...this.state };
+            }
+
+            async reset() {
+                if (confirm('すべてのデータをリセットしますか？この操作は取り消せません。')) {
+                    try {
+                        await this.apiClient.updateUsage(0);
+                        await this.apiClient.updateNotificationFlag('notified_half', false);
+                        await this.apiClient.updateNotificationFlag('notified_low', false);
+                        
+                        this.state.update({
+                            currentUses: 0,
+                            notifiedHalf: false,
+                            notifiedLow: false
+                        });
+                        
+                        this.uiManager.showToast('データをリセットしました', 'success');
+                    } catch (error) {
+                        this.uiManager.showToast('リセットに失敗しました', 'error');
+                    }
+                }
+            }
+        }
+
+        // === アプリケーション開始 ===
+        document.addEventListener('DOMContentLoaded', () => {
+            // パフォーマンス最適化
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js').catch(console.error);
+                });
+            }
+            
+            // アプリケーション初期化
+            window.detergentApp = new DetergentStockManager();
+            
+            // デバッグ用（開発時のみ）
+            if (window.location.hostname === 'localhost') {
+                window.debugApp = {
+                    getState: () => window.detergentApp.getState(),
+                    reset: () => window.detergentApp.reset(),
+                    showToast: (msg, type) => window.detergentApp.uiManager.showToast(msg, type)
+                };
+            }
+        });
+    </script>
+</body>
+</html>
