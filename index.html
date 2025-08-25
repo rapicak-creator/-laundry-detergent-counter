@@ -1,194 +1,226 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>洗剤カウンター</title>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <style>
-    body { font-family: sans-serif; text-align: center; margin: 40px; }
-    .progress { width: 100%; background: #eee; height: 24px; border-radius: 12px; overflow: hidden; margin: 20px 0; }
-    .bar { height: 100%; background: #2e7d32; width: 0%; transition: width 0.6s ease; color: #fff; display:flex; align-items:center; justify-content:center; font-weight:bold; }
-    button { padding: 15px 30px; font-size: 18px; margin: 20px; background:#1976d2; color:#fff; border:none; border-radius:6px; cursor:pointer; }
-    button:hover { background:#1565c0; }
-    #message { margin-top: 15px; font-size: 16px; color: #333; }
-    #message.warning { color: #d32f2f; font-weight:bold; }
-    #download-btn { background: #4caf50; }
-    #download-btn:hover { background: #388e3c; }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>洗剤カウンター</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin: 40px; }
+    .progress { width: 100%; background: #eee; height: 24px; border-radius: 12px; overflow: hidden; margin: 20px 0; }
+    .bar { height: 100%; background: #2e7d32; width: 0%; transition: width 0.6s ease; color: #fff; display:flex; align-items:center; justify-content:center; font-weight:bold; }
+    button { padding: 15px 30px; font-size: 18px; margin: 20px; background:#1976d2; color:#fff; border:none; border-radius:6px; cursor:pointer; }
+    button:hover { background:#1565c0; }
+    #message { margin-top: 15px; font-size: 16px; color: #333; }
+    #message.warning { color: #d32f2f; font-weight:bold; }
+    #download-btn { background: #4caf50; }
+    #download-btn:hover { background: #388e3c; }
+  </style>
 </head>
 <body>
-  <h1>部屋干しスーパークリーン</h1>
-  <p>残り: <span id="remaining">読み込み中...</span> 回</p>
-  <div class="progress"><div class="bar" id="bar">0%</div></div>
-  <button id="download-btn">履歴をCSVでダウンロード</button>
-  <p><small>※1回の使用量: 22ml</small></p>
-  <div id="message" role="status" aria-live="polite"></div>
+  <h1>部屋干しスーパークリーン</h1>
+  <p>残り: <span id="remaining">読み込み中...</span> 回</p>
+  <div class="progress"><div class="bar" id="bar">0%</div></div>
+  <button id="download-btn">履歴をCSVでダウンロード</button>
+  <p><small>※1回の使用量: 22ml</small></p>
+  <div id="message" role="status" aria-live="polite"></div>
 
-  <script>
-    const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
-    const UID = "ABC123";
-    const USER_EMAIL = "rapicak@gmail.com";
+  <script>
+    const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
+    const UID = "ABC123";
+    const USER_EMAIL = "rapicak@gmail.com";
 
-    const client = axios.create({
-      baseURL: SUPABASE_URL + "/rest/v1",
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-      },
-    });
+    const client = axios.create({
+      baseURL: SUPABASE_URL + "/rest/v1",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+    });
 
-    const TOTAL = 83;
+    const TOTAL = 83;
 
-    // 使用ログを記録する関数
-    async function logUse() {
-      try {
-        await client.post(`/detergent_logs`, {
-          user_id: UID,
-          amount_ml: 22,
-        }, {
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`
-          }
-        });
-      } catch (e) {
-        console.warn("ログ記録失敗:", e.message);
-      }
-    }
+    // 使用ログを記録する関数
+    async function logUse() {
+      try {
+        await client.post(`/detergent_logs`, {
+          user_id: UID,
+          amount_ml: 22,
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`
+          }
+        });
+      } catch (e) {
+        console.warn("ログ記録失敗:", e.message);
+      }
+    }
 
-    // 読み込み処理（新規ユーザーの場合に初期化する）
-    async function loadAndInitialize() {
-      try {
-        const res = await client.get(`/detergent_usage?id=eq.${UID}`);
-        if (res.data.length === 0) {
-          await client.post(`/detergent_usage`, { 
-            id: UID, 
-            email: USER_EMAIL, 
-            current_uses: 0, 
-            notified_half: false, 
-            notified_low: false 
-          });
-        }
-      } catch (e) {
-        showMessage("初期化失敗: " + e.message, true);
-      }
-    }
+    // 初期読み込み
+    async function load() {
+      try {
+        const res = await client.get(`/detergent_usage?id=eq.${UID}`);
+        if (res.data.length === 0) {
+          await client.post(`/detergent_usage`, { 
+            id: UID, 
+            email: USER_EMAIL, 
+            current_uses: 0, 
+            notified_half: false, 
+            notified_low: false 
+          });
+          updateUI(TOTAL);
+        } else {
+          const item = res.data[0];
+          const remaining = TOTAL - item.current_uses;
+          updateUI(remaining);
+        }
+      } catch (e) {
+        showMessage("読み込み失敗: " + e.message, true);
+      }
+    }
 
-    // カウントダウンとUI更新を行う関数
-    async function useOnce() {
-      try {
-        await loadAndInitialize(); // 初期化を試みる
-        const res = await client.get(`/detergent_usage?id=eq.${UID}`);
-        const item = res.data[0];
-        const newUses = item.current_uses + 1;
-        const remaining = TOTAL - newUses;
+    // 今日初めてのアクセスならカウントダウン
+    async function autoUseIfNewDay() {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const lastUsed = localStorage.getItem("lastUsedDate");
 
-        // 使用回数を更新
-        await client.patch(`/detergent_usage?id=eq.${UID}`, { current_uses: newUses });
-        updateUI(remaining);
+      if (lastUsed !== today) {
+        // 今日はまだ使用していない → 使用処理
+        try {
+          const res = await client.get(`/detergent_usage?id=eq.${UID}`);
+          let item;
+          
+          if (res.data.length === 0) {
+            const createRes = await client.post(`/detergent_usage`, { 
+              id: UID, 
+              email: USER_EMAIL, 
+              current_uses: 0, 
+              notified_half: false, 
+              notified_low: false 
+            });
+            item = createRes.data;
+          } else {
+            item = res.data[0];
+          }
 
-        // 使用ログを記録
-        await logUse();
+          const newUses = item.current_uses + 1;
+          const remaining = TOTAL - newUses;
 
-        // 通知処理
-        if (remaining <= TOTAL/2 && !item.notified_half) {
-          await fetch(`/api/send-email`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ type: "半分", remaining, to: USER_EMAIL })
-          });
-          await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_half: true });
-        }
-        if (remaining <= 10 && !item.notified_low) {
-          await fetch(`/api/send-email`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ type: "残りわずか", remaining, to: USER_EMAIL })
-          });
-          await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_low: true });
-        }
+          await client.patch(`/detergent_usage?id=eq.${UID}`, { current_uses: newUses });
+          localStorage.setItem("lastUsedDate", today); // 今日使ったことを記録
 
-      } catch (e) {
-        showMessage("更新に失敗しました。ネットワークを確認してください。", true);
-      }
-    }
+          updateUI(remaining);
+          await logUse();
 
-    // CSVダウンロード機能
-    async function downloadCSV() {
-      try {
-        const res = await client.get(`/detergent_logs?user_id=eq.${UID}&order=used_at`, {
-          params: {
-            select: 'used_at, amount_ml'
-          }
-        });
+          // 通知処理
+          if (remaining <= TOTAL/2 && !item.notified_half) {
+            try {
+              await fetch(`/api/send-email`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: "半分", remaining, to: USER_EMAIL })
+              });
+              await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_half: true });
+            } catch (e) {
+              console.warn("メール送信失敗:", e);
+            }
+          }
+          if (remaining <= 10 && !item.notified_low) {
+            try {
+              await fetch(`/api/send-email`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type: "残りわずか", remaining, to: USER_EMAIL })
+              });
+              await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_low: true });
+            } catch (e) {
+              console.warn("メール送信失敗:", e);
+            }
+          }
 
-        if (res.data.length === 0) {
-          alert("履歴がありません。");
-          return;
-        }
+        } catch (e) {
+          showMessage("カウントダウンに失敗しました。", true);
+        }
+      } else {
+        // 今日はすでに使っている → 通常の読み込みだけ
+        load();
+      }
+    }
 
-        // CSVヘッダー
-        let csv = "日時,使用量(ml)\n";
-        // データ行
-        res.data.forEach(log => {
-          const date = new Date(log.used_at).toLocaleString('ja-JP', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          });
-          csv += `${date},${log.amount_ml}\n`;
-        });
+    // CSVダウンロード機能
+    async function downloadCSV() {
+      try {
+        const res = await client.get(`/detergent_logs?user_id=eq.${UID}&order=used_at`, {
+          params: {
+            select: 'used_at, amount_ml'
+          }
+        });
 
-        // Blobでファイル作成
-        const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' }); // BOM付UTF-8
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `洗剤使用履歴_${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
+        if (res.data.length === 0) {
+          alert("履歴がありません。");
+          return;
+        }
 
-        showMessage("CSVをダウンロードしました。");
-      } catch (e) {
-        showMessage("履歴の取得に失敗しました。", true);
-      }
-    }
+        // CSVヘッダー
+        let csv = "日時,使用量(ml)\n";
+        // データ行
+        res.data.forEach(log => {
+          const date = new Date(log.used_at).toLocaleString('ja-JP', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          });
+          csv += `"${date}",${log.amount_ml}\n`;
+        });
 
-    // UIを更新する関数
-    function updateUI(remaining) {
-      document.getElementById("remaining").textContent = remaining;
-      const percent = Math.max(0, (remaining / TOTAL) * 100);
-      const bar = document.getElementById("bar");
-      bar.style.width = percent + "%";
-      bar.textContent = Math.round(percent) + "%";
+        // Blobでファイル作成
+        const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' }); // BOM付UTF-8
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `洗剤使用履歴_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
 
-      if (remaining <= 10) {
-        showMessage(`⚠️ 残り${remaining}回です。補充をご検討ください。`, true);
-      } else if (remaining <= TOTAL/2) {
-        showMessage(`残り${remaining}回になりました（半分以下）。`, true);
-      } else {
-        showMessage(`残り${remaining}回使えます。`);
-      }
-    }
+        showMessage("CSVをダウンロードしました。");
+      } catch (e) {
+        showMessage("履歴の取得に失敗しました。", true);
+      }
+    }
 
-    // メッセージを表示する関数
-    function showMessage(text, warning = false) {
-      const msg = document.getElementById("message");
-      msg.textContent = text;
-      msg.className = warning ? "warning" : "";
-    }
+    function updateUI(remaining) {
+      document.getElementById("remaining").textContent = remaining;
+      const percent = Math.max(0, (remaining / TOTAL) * 100);
+      const bar = document.getElementById("bar");
+      bar.style.width = percent + "%";
+      bar.textContent = Math.round(percent) + "%";
 
-    // イベントリスナー
-    document.getElementById("download-btn").addEventListener("click", downloadCSV);
-    
-    // ページ読み込み時にカウントダウンを実行
-    useOnce();
-  </script>
+      if (remaining <= 10) {
+        showMessage(`⚠️ 残り${remaining}回です。補充をご検討ください。`, true);
+      } else if (remaining <= TOTAL/2) {
+        showMessage(`残り${remaining}回になりました（半分以下）。`, true);
+      } else {
+        showMessage(`残り${remaining}回使えます。`);
+      }
+    }
+
+    function showMessage(text, warning = false) {
+      const msg = document.getElementById("message");
+      msg.textContent = text;
+      msg.className = warning ? "warning" : "";
+    }
+
+    // イベントリスナー
+    document.getElementById("download-btn").addEventListener("click", downloadCSV);
+
+    // ページ読み込み時に自動カウントダウン処理を実行
+    autoUseIfNewDay();
+  </script>
 </body>
 </html>
