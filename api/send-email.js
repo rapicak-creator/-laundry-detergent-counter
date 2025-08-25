@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     <div class="content">
       <p>「部屋干しスーパークリーン」の残りはあと<strong class="highlight">${remaining}回分</strong>です。</p>
       <p>補充をおすすめします。</p>
-      <a href="https://example.com/replenish" class="button">今すぐ補充する</a>
+      <a href="https://laundry-detergent-counter.vercel.app/" class="button">今すぐ補充する</a>
     </div>
     <div class="footer">
       <p>これは自動送信メールです。</p>
@@ -64,4 +64,5 @@ export default async function handler(req, res) {
     res.status(500).json({ error });
   }
 }
+
 
