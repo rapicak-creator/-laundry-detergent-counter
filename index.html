@@ -1,101 +1,442 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>洗剤カウンター</title>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <style>
-    body { font-family: sans-serif; text-align: center; margin: 40px; }
-    .progress { width: 100%; background: #eee; height: 20px; border-radius: 10px; overflow: hidden; }
-    .bar { height: 100%; background: #4CAF50; width: 0%; }
-    button { padding: 15px 30px; font-size: 18px; margin: 20px; }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>洗剤ストックマネージャー</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        /* 1. デザインシステムの定義 (CSS Custom Properties) */
+        :root {
+            --primary-50: #eff6ff;
+            --primary-100: #dbeafe;
+            --primary-500: #3b82f6;
+            --primary-600: #2563eb;
+            --primary-900: #1e3a8a;
+            
+            --neutral-50: #f8fafc;
+            --neutral-200: #e2e8f0;
+            --neutral-400: #94a3b8;
+            --neutral-700: #334155;
+            --neutral-900: #0f172a;
+            
+            --semantic-success: #10b981;
+            --semantic-warning: #f59e0b;
+            --semantic-error: #ef4444;
+            
+            --text-xs: 0.75rem; /* 12px */
+            --text-sm: 0.875rem; /* 14px */
+            --text-base: 1rem; /* 16px */
+            --text-lg: 1.125rem; /* 18px */
+            --text-xl: 1.25rem; /* 20px */
+            --text-3xl: 1.875rem; /* 30px */
+            
+            --spacing-1: 0.25rem;
+            --spacing-2: 0.5rem;
+            --spacing-4: 1rem;
+            --spacing-6: 1.5rem;
+            --spacing-8: 2rem;
+            --spacing-12: 3rem;
+
+            --border-radius: 0.75rem;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* 2. 基本スタイルとリセット */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: var(--neutral-50);
+            color: var(--neutral-700);
+            margin: 0;
+            display: grid;
+            place-items: center;
+            min-height: 100vh;
+            padding: var(--spacing-4);
+        }
+        
+        /* 3. BEM記法によるコンポーネント設計 */
+        .manager-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 400px;
+            padding: var(--spacing-6);
+            text-align: center;
+            transition: var(--transition);
+        }
+        @media (min-width: 640px) {
+            .manager-card {
+                padding: var(--spacing-8);
+            }
+        }
+
+        .manager-card__header {
+            margin-bottom: var(--spacing-6);
+        }
+
+        .manager-card__title {
+            font-size: var(--text-xl);
+            font-weight: 700;
+            color: var(--neutral-900);
+            margin: 0 0 var(--spacing-1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-2);
+        }
+        
+        .manager-card__subtitle {
+            font-size: var(--text-sm);
+            color: var(--neutral-400);
+            margin: 0;
+        }
+
+        .manager-card__status {
+            margin-bottom: var(--spacing-2);
+        }
+
+        .manager-card__remaining {
+            font-size: var(--text-3xl);
+            font-weight: 700;
+            color: var(--primary-600);
+            line-height: 1;
+        }
+
+        .manager-card__remaining-unit {
+            font-size: var(--text-base);
+            font-weight: 500;
+            color: var(--neutral-700);
+            margin-left: var(--spacing-1);
+        }
+        
+        .manager-card__progress-wrapper {
+            width: 100%;
+            background-color: var(--neutral-200);
+            height: 12px;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: var(--spacing-6);
+        }
+        
+        .manager-card__progress-bar {
+            height: 100%;
+            background-color: var(--primary-500);
+            width: 0%;
+            border-radius: 6px;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s;
+        }
+
+        /* プログレスバーの色を残り回数で変化させる */
+        .manager-card__progress-bar--warning { background-color: var(--semantic-warning); }
+        .manager-card__progress-bar--danger { background-color: var(--semantic-error); }
+
+        .manager-card__button {
+            background-color: var(--primary-500);
+            color: white;
+            font-size: var(--text-base);
+            font-weight: 500;
+            padding: var(--spacing-4) var(--spacing-6);
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            width: 100%;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--spacing-2);
+        }
+
+        /* インタラクションの強化 */
+        .manager-card__button:hover:not(:disabled) {
+            background-color: var(--primary-600);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        .manager-card__button:focus-visible {
+            outline: 3px solid var(--primary-100);
+            outline-offset: 2px;
+        }
+        
+        .manager-card__button:disabled {
+            background-color: var(--neutral-200);
+            cursor: wait;
+        }
+        
+        /* ボタン内のスピナー */
+        .spinner {
+            width: 1.25em;
+            height: 1.25em;
+            border: 2px solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .manager-card__footer {
+            margin-top: var(--spacing-4);
+            font-size: var(--text-xs);
+            color: var(--neutral-400);
+        }
+
+        /* スケルトンローダー */
+        .skeleton {
+            opacity: 0.7;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            background-color: var(--neutral-200);
+            border-radius: 0.5rem;
+        }
+        @keyframes pulse {
+            50% { opacity: .5; }
+        }
+        .skeleton-text { width: 70%; height: 1.25em; margin: 0.5em auto; }
+        .skeleton-title { width: 50%; height: 1.75em; margin: 0.5em auto; }
+        .skeleton-large-text { width: 30%; height: 2.5em; margin: 0.5em auto; }
+        .skeleton-bar { width: 100%; height: 12px; margin-top: 1.5em; }
+        .skeleton-button { width: 100%; height: 3.25em; margin-top: 1.5em; }
+
+        /* トースト通知 */
+        .toast {
+            position: fixed;
+            bottom: var(--spacing-4);
+            left: 50%;
+            transform: translate(-50%, 200%);
+            padding: var(--spacing-2) var(--spacing-4);
+            border-radius: var(--border-radius);
+            color: white;
+            font-size: var(--text-sm);
+            box-shadow: var(--shadow);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 1000;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+        .toast--success { background-color: var(--semantic-success); }
+        .toast--error { background-color: var(--semantic-error); }
+    </style>
 </head>
 <body>
-  <h1>部屋干しスーパークリーン</h1>
-  <p>残り: <span id="remaining">読み込み中...</span> 回</p>
-  <div class="progress"><div class="bar" id="bar"></div></div>
-  <button onclick="useOnce()">使用済みにする</button>
-  <p><small>※1回の使用量: 22ml</small></p>
+    <main>
+        <section class="manager-card" id="detergentManager" aria-labelledby="cardTitle">
+            <div id="loader">
+                <div class="skeleton skeleton-title"></div>
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-large-text"></div>
+                <div class="skeleton skeleton-bar"></div>
+                <div class="skeleton skeleton-button"></div>
+            </div>
 
-  <script>
-    const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
-    const UID = "ABC123";
-    const USER_EMAIL = "rapicak@gmail.com";
+            <div id="content" hidden>
+                <header class="manager-card__header">
+                    <h1 class="manager-card__title" id="cardTitle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0L12 2.69z"></path></svg>
+                        <span>部屋干しスーパークリーン</span>
+                    </h1>
+                    <p class="manager-card__subtitle">洗剤ストックマネージャー</p>
+                </header>
 
-    const client = axios.create({
-      baseURL: SUPABASE_URL + "/rest/v1",
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-      },
+                <div class="manager-card__status">
+                    <p>残り <span class="manager-card__remaining" id="remainingCount">...</span><span class="manager-card__remaining-unit">回分</span></p>
+                </div>
+                
+                <div class="manager-card__progress-wrapper" role="progressbar" aria-valuemin="0" aria-valuemax="83" aria-valuenow="0" aria-valuetext="読み込み中...">
+                    <div class="manager-card__progress-bar" id="progressBar"></div>
+                </div>
+
+                <button class="manager-card__button" id="useButton" type="button">
+                    <span id="buttonText">1回分使用する</span>
+                    <div class="spinner" id="buttonSpinner" hidden></div>
+                </button>
+
+                <footer class="manager-card__footer">
+                    ※1回の標準使用量: 22ml
+                </footer>
+            </div>
+        </section>
+    </main>
+    <div id="toastContainer"></div>
+
+    <script>
+    // 5. 改善されたJavaScriptロジック
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- 設定値 ---
+        const SUPABASE_URL = "https://vnzyqgrkjkeiwahainnc.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
+        const UID = "ABC123";
+        const USER_EMAIL = "rapicak@gmail.com";
+        const TOTAL_USES = 83; // 定数として管理
+
+        // --- DOM要素のキャッシュ ---
+        const loaderEl = document.getElementById('loader');
+        const contentEl = document.getElementById('content');
+        const remainingEl = document.getElementById('remainingCount');
+        const progressBarEl = document.getElementById('progressBar');
+        const progressWrapperEl = document.querySelector('.manager-card__progress-wrapper');
+        const useButton = document.getElementById('useButton');
+        const buttonText = document.getElementById('buttonText');
+        const buttonSpinner = document.getElementById('buttonSpinner');
+        const toastContainer = document.getElementById('toastContainer');
+
+        // --- 状態管理 ---
+        let appState = {
+            currentUses: 0,
+            notifiedHalf: false,
+            notifiedLow: false,
+            isProcessing: false,
+        };
+
+        // --- APIクライアント ---
+        const client = axios.create({
+            baseURL: `${SUPABASE_URL}/rest/v1`,
+            headers: {
+                apikey: SUPABASE_KEY,
+                Authorization: `Bearer ${SUPABASE_KEY}`,
+            },
+        });
+
+        // --- UI更新関数 ---
+        const render = () => {
+            const remaining = TOTAL_USES - appState.currentUses;
+            const percentage = remaining > 0 ? (remaining / TOTAL_USES) * 100 : 0;
+            
+            remainingEl.textContent = remaining;
+            progressBarEl.style.width = `${percentage}%`;
+            
+            // プログレスバーの色を動的に変更
+            progressBarEl.classList.remove('manager-card__progress-bar--warning', 'manager-card__progress-bar--danger');
+            if (remaining <= 10) {
+                progressBarEl.classList.add('manager-card__progress-bar--danger');
+            } else if (remaining <= TOTAL_USES / 2) {
+                progressBarEl.classList.add('manager-card__progress-bar--warning');
+            }
+
+            // アクセシビリティ属性の更新
+            progressWrapperEl.setAttribute('aria-valuenow', remaining);
+            progressWrapperEl.setAttribute('aria-valuetext', `残り ${remaining} 回分`);
+
+            // ボタンの状態を更新
+            useButton.disabled = appState.isProcessing || remaining <= 0;
+            buttonText.textContent = remaining <= 0 ? '使い切りました' : '1回分使用する';
+            buttonSpinner.hidden = !appState.isProcessing;
+        };
+
+        // --- トースト通知関数 ---
+        const showToast = (message, type = 'success') => {
+            const toast = document.createElement('div');
+            toast.className = `toast toast--${type}`;
+            toast.textContent = message;
+            toastContainer.appendChild(toast);
+            
+            // 表示アニメーション
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            // 3秒後に非表示
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.addEventListener('transitionend', () => toast.remove());
+            }, 3000);
+        };
+
+        // --- ビジネスロジック ---
+        const handleUseOnce = async () => {
+            if (appState.isProcessing || (TOTAL_USES - appState.currentUses) <= 0) return;
+
+            appState.isProcessing = true;
+            
+            // オプティミスティックUI: 先にUIを更新
+            const previousUses = appState.currentUses;
+            appState.currentUses++;
+            render();
+
+            try {
+                const newUses = appState.currentUses;
+                const remaining = TOTAL_USES - newUses;
+
+                // Supabaseにパッチを送信
+                await client.patch(`/detergent_usage?id=eq.${UID}`, { current_uses: newUses });
+
+                // 通知ロジック
+                if (remaining <= TOTAL_USES / 2 && !appState.notifiedHalf) {
+                    await fetch(`/api/send-email`, {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ type: "半分", remaining, to: USER_EMAIL })
+                    });
+                    await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_half: true });
+                    appState.notifiedHalf = true;
+                }
+
+                if (remaining <= 10 && !appState.notifiedLow) {
+                    await fetch(`/api/send-email`, {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ type: "残りわずか", remaining, to: USER_EMAIL })
+                    });
+                    await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_low: true });
+                    appState.notifiedLow = true;
+                }
+                
+                showToast('使用履歴を記録しました！');
+
+            } catch (error) {
+                console.error("更新エラー:", error);
+                showToast('更新に失敗しました。', 'error');
+                // ロールバック: 失敗した場合はUIを元に戻す
+                appState.currentUses = previousUses;
+                render();
+            } finally {
+                appState.isProcessing = false;
+                render(); // ボタンの状態を最終更新
+            }
+        };
+        
+        // --- 初期化処理 ---
+        const initializeApp = async () => {
+            try {
+                const { data } = await client.get(`/detergent_usage?id=eq.${UID}`);
+
+                if (data.length === 0) {
+                    // 新規ユーザー: データを作成
+                    await client.post(`/detergent_usage`, { id: UID, email: USER_EMAIL, current_uses: 0, notified_half: false, notified_low: false });
+                    appState = { ...appState, currentUses: 0, notifiedHalf: false, notifiedLow: false };
+                } else {
+                    const item = data[0];
+                    appState = { ...appState, currentUses: item.current_uses, notifiedHalf: item.notified_half, notifiedLow: item.notified_low };
+                }
+
+            } catch (error) {
+                console.error("初期化エラー:", error);
+                showToast('データの読み込みに失敗しました。', 'error');
+                // エラー時でもUIを部分的に表示
+                contentEl.innerHTML = `<p style="color: var(--semantic-error);">エラーが発生しました。再読み込みしてください。</p>`;
+            } finally {
+                // ローダーを非表示にし、コンテンツを表示
+                loaderEl.hidden = true;
+                contentEl.hidden = false;
+                render();
+            }
+        };
+
+        // --- イベントリスナーの設定 ---
+        useButton.addEventListener('click', handleUseOnce);
+
+        // --- アプリケーションの開始 ---
+        initializeApp();
     });
-
-    async function load() {
-      try {
-        const res = await client.get(`/detergent_usage?id=eq.${UID}`);
-        if (res.data.length === 0) {
-          await client.post(`/detergent_usage`, { id: UID, email: USER_EMAIL });
-          document.getElementById("remaining").textContent = "83";
-          document.getElementById("bar").style.width = "100%";
-        } else {
-          const item = res.data[0];
-          const remaining = 83 - item.current_uses;
-          document.getElementById("remaining").textContent = remaining;
-          document.getElementById("bar").style.width = (remaining / 83 * 100) + "%";
-        }
-      } catch (e) {
-        alert("読み込み失敗: " + e.message);
-      }
-    }
-
-    async function useOnce() {
-      try {
-        const res = await client.get(`/detergent_usage?id=eq.${UID}`);
-        const item = res.data[0];
-        const newUses = item.current_uses + 1;
-        const remaining = 83 - newUses;
-
-        await client.patch(`/detergent_usage?id=eq.${UID}`, { current_uses: newUses });
-
-        // ✅ ブラウザから直接fetchしない！
-        // 代わりに、自分のVercelのAPIを呼ぶ
-        if (remaining <= 41 && !item.notified_half) {
-          await fetch(`/api/send-email`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type: "半分",
-              remaining,
-              to: USER_EMAIL
-            })
-          });
-          await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_half: true });
-        }
-
-        if (remaining <= 10 && !item.notified_low) {
-          await fetch(`/api/send-email`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              type: "残りわずか",
-              remaining,
-              to: USER_EMAIL
-            })
-          });
-          await client.patch(`/detergent_usage?id=eq.${UID}`, { notified_low: true });
-        }
-
-        alert(`使用登録しました。残り${remaining}回`);
-        location.reload();
-      } catch (e) {
-        alert("エラー: " + e.message);
-      }
-    }
-
-    load();
-  </script>
+    </script>
 </body>
 </html>
