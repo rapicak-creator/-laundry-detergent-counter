@@ -8,7 +8,6 @@
   <title>部屋干しスーパークリーン｜洗剤カウンター</title>
   <link rel="icon" href="image/favicon.svg" type="image/svg+xml">
 
-
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -236,6 +235,7 @@
   </style>
 </head>
 <body>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
 
   <div class="container" role="main" aria-labelledby="app-title">
     <header class="header">
@@ -255,13 +255,10 @@
         </div>
       </div>
 
-      <button id="useBtn" class="btn" aria-label="洗剤を1回使用済みにする">
-        使用済みにする
-      </button>
 
-        <button id="csvBtn" class="btn" style="margin-top:1rem; background:var(--primary-light); color:var(--primary);" aria-label="CSVダウンロード">
-          CSVダウンロード
-        </button>
+      <button id="csvBtn" class="btn" style="margin-top:1rem; background:var(--primary-light); color:var(--primary);" aria-label="CSVダウンロード">
+        CSVダウンロード
+      </button>
 
       <p id="warning" class="warning" style="display:none;"></p>
       <p class="disclaimer">※1回の使用量：22ml</p>
@@ -284,7 +281,7 @@
     const remainingEl = document.getElementById('remaining');
     const barEl = document.getElementById('bar');
     const progressTextEl = document.getElementById('progressText');
-    const useBtn = document.getElementById('useBtn');
+  //const useBtn = document.getElementById('useBtn');
     const csvBtn = document.getElementById('csvBtn');
     const warningEl = document.getElementById('warning');
     const toastEl = document.getElementById('toast');
@@ -292,20 +289,49 @@
     // ================================
     // ツール関数
     // ================================
-      // ボタン押下履歴
-      const useHistory = [];
-
-      // CSV生成・ダウンロード
-      function downloadCSV() {
-        if (useHistory.length === 0) {
-          showToast("履歴がありません");
-          return;
-        }
-          let csv = 'No,日時\n';
-          useHistory.forEach((dt, i) => {
-            csv += `${i+1},${dt}\n`;
+      // Supabase履歴取得・追加
+      const supabaseHistory = {
+        async add(dateTime) {
+          // detergent_usage_history テーブルに追加
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/detergent_usage_history`, {
+            method: 'POST',
+            headers: {
+              apikey: SUPABASE_KEY,
+              Authorization: `Bearer ${SUPABASE_KEY}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              id: UID,
+              used_at: dateTime
+            })
           });
-          // BOM付与
+          if (!res.ok) throw new Error(`履歴追加失敗: ${res.status}`);
+        },
+        async getAll() {
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/detergent_usage_history?id=eq.${UID}&order=used_at.asc`, {
+            headers: {
+              apikey: SUPABASE_KEY,
+              Authorization: `Bearer ${SUPABASE_KEY}`
+            }
+          });
+          if (!res.ok && res.status !== 404) throw new Error(`履歴取得失敗: ${res.status}`);
+          const text = await res.text();
+          return text ? JSON.parse(text) : [];
+        }
+      };
+
+      // CSV生成・ダウンロード（DBから取得）
+      async function downloadCSV() {
+        try {
+          const history = await supabaseHistory.getAll();
+          if (history.length === 0) {
+            showToast("履歴がありません");
+            return;
+          }
+          let csv = 'No,日時\n';
+          history.forEach((item, i) => {
+            csv += `${i+1},${new Date(item.used_at).toLocaleString('ja-JP', { hour12: false })}\n`;
+          });
           const bom = '\uFEFF';
           const blob = new Blob([bom + csv], { type: 'text/csv' });
           const url = URL.createObjectURL(blob);
@@ -316,6 +342,10 @@
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
+        } catch (e) {
+          showToast("履歴取得失敗");
+          console.error(e);
+        }
       }
     const showToast = (message) => {
       toastEl.textContent = message;
@@ -428,66 +458,65 @@
       }
     }
 
-    async function useOnce() {
+
+    async function countDownOnAccess() {
       if (!navigator.onLine) {
         showToast("オフラインです");
         return;
       }
 
-    // 履歴に追加
-    useHistory.push(new Date().toLocaleString('ja-JP', { hour12: false }));
+      // DBから直近履歴取得
       try {
-        useBtn.disabled = true;
-        useBtn.textContent = "処理中...";
-
-        const data = await supabase.get();
-        if (data.length === 0) throw new Error("データがありません");
-
-        const item = data[0];
-        const newUses = item.current_uses + 1;
-        const remaining = MAX_USES - newUses;
-
-        await supabase.update(newUses);
-
-        // メール通知（必要なら）
-        if (remaining <= 41 && !item.notified_half) {
-          // ※ 実際には /api/send-email は別バックエンドが必要
-          console.log("半分通知");
-          await supabase.update(newUses, true, item.notified_low);
+        const history = await supabaseHistory.getAll();
+        const now = Date.now();
+        let canRecord = true;
+        if (history.length > 0) {
+          const lastTime = new Date(history[history.length - 1].used_at).getTime();
+          const diff = now - lastTime;
+          if (diff < 10 * 60 * 1000) { // 10分未満
+            canRecord = false;
+          }
         }
 
-        if (remaining <= 10 && !item.notified_low) {
-          console.log("残りわずか通知");
-          await supabase.update(newUses, item.notified_half, true);
+        if (canRecord) {
+          const dateTime = new Date().toISOString();
+          await supabaseHistory.add(dateTime);
+          const data = await supabase.get();
+          if (data.length === 0) throw new Error("データがありません");
+
+          const item = data[0];
+          const newUses = item.current_uses + 1;
+          const remaining = MAX_USES - newUses;
+
+          await supabase.update(newUses);
+
+          // メール通知（必要なら）
+          if (remaining <= 41 && !item.notified_half) {
+            await supabase.update(newUses, true, item.notified_low);
+          }
+          if (remaining <= 10 && !item.notified_low) {
+            await supabase.update(newUses, item.notified_half, true);
+          }
+
+          updateUI(remaining, newUses);
+          showToast(`${remaining}回残っています`);
+        } else {
+          showToast("10分以内の連続記録はできません");
         }
-
-        updateUI(remaining, newUses);
-        showToast(`${remaining}回残っています`);
-
       } catch (e) {
-        showToast("更新失敗");
+        showToast("履歴取得・記録失敗");
         console.error(e);
-      } finally {
-        useBtn.disabled = false;
-        useBtn.textContent = "使用済みにする";
       }
     }
 
-    // ================================
-    // イベント登録
-    // ================================
-    useBtn.addEventListener('click', useOnce);
-    useBtn.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        useOnce();
-      }
-    });
+  // ================================
+  // イベント登録
+  // ================================
+  csvBtn.addEventListener('click', downloadCSV);
 
-    csvBtn.addEventListener('click', downloadCSV);
-
-    // 初期読み込み
-    load();
+  // 初期読み込み & アクセス時カウントダウン
+  load();
+  countDownOnAccess();
   </script>
 </body>
 </html>
