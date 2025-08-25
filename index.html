@@ -2,12 +2,11 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>洗剤ストックマネージャー</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* シンプルなカラーパレット */
             --primary: #0ea5e9;
             --primary-dark: #0284c7;
             --background: #ffffff;
@@ -17,30 +16,35 @@
             --warning: #f59e0b;
             --error: #ef4444;
             
-            /* シンプルなタイポグラフィ */
             --font-size-base: 1rem;
             --font-size-lg: 1.25rem;
             --font-size-xl: 1.5rem;
             
-            /* シンプルなスペーシング */
             --space-2: 0.5rem;
             --space-4: 1rem;
             --space-6: 1.5rem;
             
-            /* シンプルなボーダー */
             --border-radius: 0.25rem;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100%;
+            overflow: hidden;
         }
         
         body {
             font-family: 'Noto Sans JP', sans-serif;
             background-color: #f5f5f5;
             color: var(--text);
-            margin: 0;
-            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1rem;
         }
         
         .detergent-manager {
@@ -50,6 +54,9 @@
             width: 100%;
             max-width: 400px;
             overflow: hidden;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
         
         .detergent-manager__header {
@@ -57,6 +64,7 @@
             color: white;
             padding: var(--space-6);
             text-align: center;
+            flex-shrink: 0;
         }
         
         .detergent-manager__title {
@@ -77,6 +85,9 @@
         
         .detergent-manager__content {
             padding: var(--space-6);
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
         .detergent-manager__stats {
@@ -161,6 +172,7 @@
         
         .detergent-manager__action {
             margin-bottom: var(--space-6);
+            flex-shrink: 0;
         }
         
         .detergent-manager__button {
@@ -192,6 +204,7 @@
             border-top: 1px solid var(--border);
             font-size: 0.875rem;
             color: #777;
+            flex-shrink: 0;
         }
         
         .spinner {
@@ -222,22 +235,24 @@
             display: none;
         }
         
-        @media (max-width: 480px) {
-            .detergent-manager {
-                max-width: 100%;
-            }
+        /* スクロールバーの非表示（必要に応じて） */
+        .detergent-manager__content::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .detergent-manager__content {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 </head>
 <body>
     <main>
         <article class="detergent-manager" id="detergentManager">
-            <!-- ローディング状態 -->
             <div id="loadingState" style="padding: 2rem; text-align: center; display: none;">
                 <p>データを読み込み中...</p>
             </div>
             
-            <!-- メインコンテンツ -->
             <div id="mainContent">
                 <header class="detergent-manager__header">
                     <h1 class="detergent-manager__title" id="appTitle">
@@ -310,7 +325,6 @@
             toast: document.getElementById('toast')
         };
         
-        // 簡素化されたAPIクライアント
         class APIClient {
             constructor() {
                 this.client = axios.create({
@@ -358,7 +372,6 @@
             }
         }
         
-        // 簡素化されたUI管理
         class UIManager {
             constructor() {
                 this.showLoading = () => {
@@ -381,7 +394,6 @@
                     elements.progressFill.style.width = `${percentage}%`;
                     elements.progressPercentage.textContent = `${Math.round(percentage)}%`;
                     
-                    // 状態に応じたプログレスバーの色
                     elements.progressFill.className = 'detergent-manager__progress-fill';
                     if (remaining <= 10) {
                         elements.progressFill.classList.add('detergent-manager__progress-fill--danger');
@@ -389,7 +401,6 @@
                         elements.progressFill.classList.add('detergent-manager__progress-fill--warning');
                     }
                     
-                    // ボタンの状態更新
                     elements.useButton.disabled = remaining <= 0;
                     elements.buttonText.textContent = remaining <= 0 ? '使い切りました' : '1回分使用する';
                 };
@@ -406,7 +417,6 @@
             }
         }
         
-        // メインアプリケーション
         class DetergentStockManager {
             constructor() {
                 this.currentUses = 0;
@@ -430,7 +440,6 @@
                     this.uiManager.updateDisplay(this.currentUses);
                     this.uiManager.hideLoading();
                     
-                    // イベントリスナーの設定
                     elements.useButton.addEventListener('click', () => this.useOnce());
                 } catch (error) {
                     this.uiManager.hideLoading();
