@@ -7,10 +7,14 @@
   <script>
     // ページ描画前にテーマを適用して FOUC を防止
     (function () {
-      const saved = localStorage.getItem('theme');
       const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const theme = saved || (prefersDark ? 'dark' : 'light');
+      const theme = prefersDark ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme', theme);
+      
+      // デバイスのテーマ設定変更を監視
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+        document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+      });
     })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -39,7 +43,7 @@
       --text: #e5e7eb;
       --muted: #94a3b8;
       --border: #243142;
-      --bar: #22c55e;           /* ダークで少し明るめの緑 */
+      --bar: #22c55e;
       --bar-text: #0b0f14;
       --btn-bg: #2563eb;
       --btn-bg-hover: #1e40af;
@@ -169,6 +173,28 @@
       .bar { transition: none; }
       button { transition: none; }
     }
+    
+    /* ===== 説明セクション ===== */
+    .explanation {
+      background: var(--bg);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-top: 24px;
+      border: 1px solid var(--border);
+    }
+    .explanation h2 {
+      font-size: 18px;
+      margin-top: 0;
+      color: var(--bar);
+    }
+    .explanation ul {
+      padding-left: 20px;
+      margin: 10px 0;
+    }
+    .explanation li {
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -177,9 +203,6 @@
       <div>
         <h1 id="title">部屋干しスーパークリーン</h1>
         <p class="desc">自動で残量を記録し、しきい値で通知します。</p>
-      </div>
-      <div class="actions" style="margin:0">
-        <button id="theme-btn" class="btn-ghost" aria-pressed="false" aria-label="テーマ切替">🌙 ダーク</button>
       </div>
     </header>
 
@@ -196,13 +219,20 @@
       <div class="bar" id="bar" aria-live="polite">0%</div>
     </div>
 
-    <div class="actions">
-      <!-- 任意: 手動で「1回使用」を記録したい場合はこのボタンを表示 -->
-      <button id="use-btn" class="btn-primary">1回使用（手動）</button>
-    </div>
-
     <p><small>※1回の使用量: 22ml</small></p>
     <div id="message" role="status" aria-live="polite"></div>
+    
+    <div class="explanation">
+      <h2>このアプリについて</h2>
+      <ul>
+        <li>ページを開くたびに自動で「1回使用」が記録されます（手動ボタンは削除）</li>
+        <li>1日最大3回まで使用可能（超過時は通知）</li>
+        <li>残り回数が半分以下になると通知</li>
+        <li>残り10回以下で警告表示</li>
+        <li>テーマはデバイス設定に自動連動（ダーク/ライト自動切替）</li>
+      </ul>
+      <p><small>※実際のデータはSupabaseに保存されています</small></p>
+    </div>
   </main>
 
   <script>
@@ -214,7 +244,7 @@
     const MAX_USES_PER_DAY = 3;  // 1日最大使用回数
     const TOTAL_USES = 83;       // 全体の使用可能回数
 
-    // ===== Supabase クライアント（REST）=====
+    // ===== Supabase クライアント（REST）===== 
     const client = axios.create({
       baseURL: `${SUPABASE_URL}/rest/v1`,
       headers: {
@@ -223,22 +253,6 @@
       },
       paramsSerializer: { indexes: null }
     });
-
-    // ===== テーマ切替 =====
-    const themeBtn = document.getElementById('theme-btn');
-    function applyThemeLabel() {
-      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-      themeBtn.textContent = isDark ? '☀️ ライト' : '🌙 ダーク';
-      themeBtn.setAttribute('aria-pressed', String(isDark));
-    }
-    themeBtn.addEventListener('click', () => {
-      const current = document.documentElement.getAttribute('data-theme');
-      const next = current === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
-      localStorage.setItem('theme', next);
-      applyThemeLabel();
-    });
-    applyThemeLabel();
 
     // ===== 今日の日付 (YYYY-MM-DD) =====
     function getToday() {
@@ -454,31 +468,25 @@
 
     // ===== イベント登録 =====
     document.getElementById("download-btn").addEventListener("click", downloadCSV);
-    document.getElementById("use-btn").addEventListener("click", () => {
-      useDetergent().catch(e => {
-        console.error("使用処理失敗:", e);
-        showMessage("処理に失敗しました。", true);
-      });
-    });
 
     // ===== ページ読み込み時 =====
     window.addEventListener("load", () => {
-      // 初回表示時に現在残量を反映（自動で1回消費したくない場合はコメントアウト）
+      // 初期表示時に現在残量を反映
       loadRemaining()
         .then(data => {
           const remaining = TOTAL_USES - (data.current_uses || 0);
           updateUI(remaining);
+          
+          // ページ表示時に自動で1回分を記録
+          useDetergent().catch(e => {
+            console.error("自動使用処理失敗:", e);
+            showMessage("処理に失敗しました。", true);
+          });
         })
         .catch(e => {
           console.error("初期化失敗:", e);
           showMessage("初期化に失敗しました。", true);
         });
-
-      // もし従来どおり「ページ表示で1回分を自動消費」したい場合は以下を有効化
-      // useDetergent().catch(e => {
-      //   console.error("自動使用処理失敗:", e);
-      //   showMessage("処理に失敗しました。", true);
-      // });
     });
   </script>
 </body>
