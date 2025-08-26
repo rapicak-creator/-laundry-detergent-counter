@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>洗剤カウンター</title>
   <link rel="icon" href="image/favicon.svg" type="image/svg+xml">
+  <!-- PWA 設定 -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="image/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="洗剤カウンター">
+<meta name="theme-color" content="#2e7d32">
   <script>
     // ページ描画前にテーマを適用して FOUC を防止
     (function () {
@@ -536,6 +543,13 @@
       // 通常の使用処理
       useDetergent();
     });
+      if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(reg => console.log('SW登録成功:', reg.scope))
+        .catch(err => console.log('SW登録失敗:', err));
+    });
+  }
   </script>
 </body>
 </html>
