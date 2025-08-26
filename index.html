@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>洗剤カウンター</title>
+  <link rel="icon" href="image/favicon.svg" type="image/svg+xml">
   <script>
     // ページ描画前にテーマを適用して FOUC を防止
     (function () {
@@ -77,10 +78,8 @@
     }
 
     header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+      text-align: center;
+      margin-bottom: 24px;
     }
     h1 {
       margin: 0;
@@ -95,14 +94,18 @@
 
     /* ===== Progress ===== */
     .kpis {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: end;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
       gap: 12px;
       margin-top: 18px;
     }
     .remaining {
-      font-size: clamp(16px, 2.8vw, 18px);
+      font-size: clamp(24px, 5vw, 40px);
+      font-weight: 700;
+      color: var(--text);
     }
     .progress {
       width: 100%;
@@ -110,7 +113,7 @@
       height: 24px;
       border-radius: 12px;
       overflow: hidden;
-      margin: 14px 0 6px;
+      margin: 10px 0;
       border: 1px solid var(--border);
     }
     .bar {
@@ -129,9 +132,10 @@
     /* ===== Buttons ===== */
     .actions {
       display: flex;
+      justify-content: center;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 14px;
+      gap: 12px;
+      margin-top: 20px;
     }
     button {
       padding: 14px 18px;
@@ -144,36 +148,41 @@
       user-select: none;
     }
     button:active { transform: translateY(1px); }
-    .btn-primary { background: var(--btn-bg); }
-    .btn-primary:hover { background: var(--btn-bg-hover); }
-    .btn-alt { background: var(--btn-alt-bg); }
-    .btn-alt:hover { background: var(--btn-alt-hover); }
+    .btn-primary {
+      background: var(--btn-bg);
+    }
+    .btn-primary:hover {
+      background: var(--btn-bg-hover);
+    }
+    .btn-alt {
+      background: var(--btn-alt-bg);
+    }
+    .btn-alt:hover {
+      background: var(--btn-alt-hover);
+    }
     .btn-ghost {
       background: transparent;
       color: var(--text);
       border: 1px solid var(--border);
     }
-    .btn-ghost:hover { filter: brightness(1.1); }
+    .btn-ghost:hover {
+      filter: brightness(1.1);
+    }
 
     /* ===== Message ===== */
     #message {
-      margin-top: 14px;
+      margin-top: 16px;
       font-size: 15px;
       min-height: 20px;
       color: var(--text);
+      text-align: center;
+      font-weight: 500;
     }
     #message.warning {
       color: var(--warning);
       font-weight: 700;
     }
-    small { color: var(--muted); }
 
-    /* ===== Accessibility ===== */
-    @media (prefers-reduced-motion: reduce) {
-      .bar { transition: none; }
-      button { transition: none; }
-    }
-    
     /* ===== 説明セクション ===== */
     .explanation {
       background: var(--bg);
@@ -195,32 +204,50 @@
       margin-bottom: 8px;
       line-height: 1.5;
     }
+
+    /* ===== メディアクエリ（レスポンシブ）===== */
+    @media (max-width: 480px) {
+      .actions {
+        flex-direction: column;
+        align-items: center;
+      }
+      button {
+        width: 100%;
+        max-width: 280px;
+      }
+    }
+
+    /* ===== Accessibility ===== */
+    @media (prefers-reduced-motion: reduce) {
+      .bar, button {
+        transition: none;
+      }
+    }
   </style>
 </head>
 <body>
   <main class="container" role="main" aria-labelledby="title">
     <header>
-      <div>
-        <h1 id="title">部屋干しスーパークリーン</h1>
-        <p class="desc">自動で残量を記録し、しきい値で通知します。</p>
-      </div>
+      <h1 id="title">部屋干しスーパークリーン</h1>
+      <p class="desc">自動で残量を記録し、しきい値で通知します。</p>
     </header>
 
     <section class="kpis" aria-live="polite">
       <div class="remaining">
         残り: <strong><span id="remaining">読み込み中...</span></strong> 回
       </div>
-      <div>
-        <button id="download-btn" class="btn-alt">履歴をCSVでダウンロード</button>
+      <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="残量進捗">
+        <div class="bar" id="bar" aria-live="polite">0%</div>
       </div>
+      <small>※1回の使用量: 22ml</small>
     </section>
 
-    <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="残量進捗">
-      <div class="bar" id="bar" aria-live="polite">0%</div>
+    <div class="actions">
+      <button id="download-btn" class="btn-alt">履歴をCSVでダウンロード</button>
     </div>
 
-    <p><small>※1回の使用量: 22ml</small></p>
     <div id="message" role="status" aria-live="polite"></div>
+
   </main>
 
   <script>
@@ -229,10 +256,10 @@
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuenlxZ3JramtlaXdhaGFpbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYwMzM1OTIsImV4cCI6MjA3MTYwOTU5Mn0.r5tCYxwjEagU7ZejUzv8Pblt1Pn5xtppE89lMdFsVHg";
     const UID = "ABC123";
     const USER_EMAIL = "rapicak@gmail.com";
-    const MAX_USES_PER_DAY = 3;  // 1日最大使用回数
-    const TOTAL_USES = 83;       // 全体の使用可能回数
+    const MAX_USES_PER_DAY = 3;   // 1日最大使用回数
+    const TOTAL_USES = 83;        // 全体の使用可能回数
 
-    // ===== Supabase クライアント（REST）===== 
+    // ===== Supabase クライアント（REST）=====
     const client = axios.create({
       baseURL: `${SUPABASE_URL}/rest/v1`,
       headers: {
@@ -254,7 +281,7 @@
           params: {
             user_id: 'eq.' + UID,
             date: 'eq.' + getToday(),
-            select: 'id,uses_count'
+            select: 'uses_count'
           }
         });
         return res.data.length > 0 ? res.data[0].uses_count : 0;
@@ -305,7 +332,6 @@
       try {
         const res = await client.get(`/detergent_usage`, { params: { id: 'eq.' + UID } });
         if (res.data.length === 0) {
-          // 初回ユーザー → 初期化
           await client.post(`/detergent_usage`, {
             id: UID,
             email: USER_EMAIL,
@@ -454,27 +480,15 @@
       }
     }
 
-    // ===== イベント登録 =====
-    document.getElementById("download-btn").addEventListener("click", downloadCSV);
+    // ===== 初期化 =====
+    window.addEventListener("load", async () => {
+      const data = await loadRemaining();
+      const remaining = TOTAL_USES - (data.current_uses || 0);
+      updateUI(remaining);
 
-    // ===== ページ読み込み時 =====
-    window.addEventListener("load", () => {
-      // 初期表示時に現在残量を反映
-      loadRemaining()
-        .then(data => {
-          const remaining = TOTAL_USES - (data.current_uses || 0);
-          updateUI(remaining);
-          
-          // ページ表示時に自動で1回分を記録
-          useDetergent().catch(e => {
-            console.error("自動使用処理失敗:", e);
-            showMessage("処理に失敗しました。", true);
-          });
-        })
-        .catch(e => {
-          console.error("初期化失敗:", e);
-          showMessage("初期化に失敗しました。", true);
-        });
+      // ボタンにイベント登録
+      document.getElementById("use-btn").addEventListener("click", useDetergent);
+      document.getElementById("download-btn").addEventListener("click", downloadCSV);
     });
   </script>
 </body>
