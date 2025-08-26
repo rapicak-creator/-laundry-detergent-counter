@@ -148,25 +148,11 @@
       user-select: none;
     }
     button:active { transform: translateY(1px); }
-    .btn-primary {
-      background: var(--btn-bg);
-    }
-    .btn-primary:hover {
-      background: var(--btn-bg-hover);
-    }
     .btn-alt {
       background: var(--btn-alt-bg);
     }
     .btn-alt:hover {
       background: var(--btn-alt-hover);
-    }
-    .btn-ghost {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-    .btn-ghost:hover {
-      filter: brightness(1.1);
     }
 
     /* ===== Message ===== */
@@ -243,12 +229,10 @@
     </section>
 
     <div class="actions">
-      <button id="use-btn" class="btn-primary">使用済み（1回分）</button>
       <button id="download-btn" class="btn-alt">履歴をCSVでダウンロード</button>
     </div>
 
     <div id="message" role="status" aria-live="polite"></div>
-
   </main>
 
   <script>
@@ -259,6 +243,7 @@
     const USER_EMAIL = "rapicak@gmail.com";
     const MAX_USES_PER_DAY = 3;   // 1日最大使用回数
     const TOTAL_USES = 83;        // 全体の使用可能回数
+    const COOLDOWN_MS = 3 * 60 * 1000; // 3分間のクールタイム
 
     // ===== Supabase クライアント（REST）=====
     const client = axios.create({
@@ -418,15 +403,53 @@
       }
     }
 
-    // ===== メッセージ表示 =====
-    function showMessage(text, warning = false) {
+    // ===== メッセージ表示（カウントダウン対応）=====
+    function showMessage(text, warning = false, timerId = null) {
       const el = document.getElementById("message");
       el.textContent = text;
       el.className = warning ? "warning" : "";
+      
+      // 前のタイマーをクリア
+      if (el.dataset.timerId) {
+        clearInterval(parseInt(el.dataset.timerId));
+      }
+      el.dataset.timerId = timerId ? timerId.toString() : '';
     }
 
-    // ===== 使用処理（1回分）=====
+    // ===== 使用処理（1回分）=====（自動実行）
     async function useDetergent() {
+      const now = Date.now();
+      const lastUsed = localStorage.getItem('detergent_last_used');
+
+      if (lastUsed && now - parseInt(lastUsed) < COOLDOWN_MS) {
+        const updateMessage = () => {
+          const elapsed = Date.now() - parseInt(localStorage.getItem('detergent_last_used') || 0);
+          const remainingMs = COOLDOWN_MS - elapsed;
+
+          if (remainingMs <= 0) {
+            clearInterval(timerId);
+            showMessage("クールタイムが終了しました。次の使用が可能です。");
+            useDetergent(); // 再試行
+          } else {
+            const totalSeconds = Math.ceil(remainingMs / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            const formatted = `${String(minutes).padStart(2, '0')}分 ${String(seconds).padStart(2, '0')}秒`;
+            showMessage(`⚠️ クールタイム中です。あと ${formatted} お待ちください。`, true);
+          }
+        };
+
+        // 初期表示
+        updateMessage();
+
+        // タイマー開始
+        const timerId = setInterval(updateMessage, 1000);
+        const messageEl = document.getElementById("message");
+        messageEl.dataset.timerId = timerId.toString();
+
+        return;
+      }
+
       const todayUses = await getTodayUses();
       if (todayUses >= MAX_USES_PER_DAY) {
         const data = await loadRemaining();
@@ -444,6 +467,9 @@
       await updateRemaining(newUses);
       await incrementTodayUses();
       await logUse();
+
+      // クールタイム記録
+      localStorage.setItem('detergent_last_used', now);
 
       // メール通知（必要時）
       if (remaining <= TOTAL_USES / 2 && !data.notified_half) {
@@ -478,18 +504,37 @@
       const remainingToday = MAX_USES_PER_DAY - (todayUses + 1);
       if (remainingToday > 0) {
         showMessage(`本日あと ${remainingToday} 回 使用可能です。`);
+      } else {
+        showMessage(`本日の使用回数上限に達しました。`, true);
       }
     }
 
     // ===== 初期化 =====
     window.addEventListener("load", async () => {
+      // ボタン削除（念のため）
+      const useBtn = document.getElementById("use-btn");
+      if (useBtn) useBtn.remove();
+
+      // CSVボタン
+      document.getElementById("download-btn").addEventListener("click", downloadCSV);
+
+      // 残量読み込み
       const data = await loadRemaining();
       const remaining = TOTAL_USES - (data.current_uses || 0);
       updateUI(remaining);
 
-      // ボタンにイベント登録
-      document.getElementById("use-btn").addEventListener("click", useDetergent);
-      document.getElementById("download-btn").addEventListener("click", downloadCSV);
+      // クールタイム継続チェック（ページ再読み込み時もカウントダウン）
+      const lastUsed = localStorage.getItem('detergent_last_used');
+      if (lastUsed) {
+        const elapsed = Date.now() - parseInt(lastUsed);
+        if (elapsed < COOLDOWN_MS) {
+          useDetergent(); // カウントダウン表示
+          return;
+        }
+      }
+
+      // 通常の使用処理
+      useDetergent();
     });
   </script>
 </body>
