@@ -1,32 +1,209 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>洗剤カウンター</title>
+  <script>
+    // ページ描画前にテーマを適用して FOUC を防止
+    (function () {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = saved || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <style>
-    body { font-family: sans-serif; text-align: center; margin: 40px; background: #f9f9f9; }
-    .progress { width: 100%; background: #eee; height: 24px; border-radius: 12px; overflow: hidden; margin: 20px 0; }
-    .bar { height: 100%; background: #2e7d32; width: 0%; transition: width 0.6s ease; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-    button { padding: 15px 30px; font-size: 18px; margin: 10px; background: #1976d2; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
-    button:hover { background: #1565c0; }
-    #download-btn { background: #4caf50; }
-    #download-btn:hover { background: #388e3c; }
-    #message { margin-top: 15px; font-size: 16px; color: #333; min-height: 20px; }
-    #message.warning { color: #d32f2f; font-weight: bold; }
-    small { color: #666; }
+    /* ===== Theme Tokens ===== */
+    :root {
+      --bg: #f9f9f9;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --bar: #2e7d32;
+      --bar-text: #ffffff;
+      --btn-bg: #1976d2;
+      --btn-bg-hover: #1565c0;
+      --btn-alt-bg: #4caf50;
+      --btn-alt-hover: #388e3c;
+      --warning: #d32f2f;
+      --progress-track: #eeeeee;
+      --shadow: 0 8px 24px rgba(0,0,0,.08);
+      --radius: 14px;
+    }
+    [data-theme="dark"] {
+      --bg: #0b0f14;
+      --card: #0f1720;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --border: #243142;
+      --bar: #22c55e;           /* ダークで少し明るめの緑 */
+      --bar-text: #0b0f14;
+      --btn-bg: #2563eb;
+      --btn-bg-hover: #1e40af;
+      --btn-alt-bg: #16a34a;
+      --btn-alt-hover: #15803d;
+      --warning: #f87171;
+      --progress-track: #1f2937;
+      --shadow: 0 8px 24px rgba(0,0,0,.35);
+    }
+
+    /* ===== Base ===== */
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans JP", "Apple Color Emoji", "Segoe UI Emoji";
+      margin: 0; padding: 32px 16px;
+      background: radial-gradient(1200px 800px at 20% -10%, rgba(37,99,235,.08), transparent 40%),
+                  radial-gradient(900px 600px at 120% 10%, rgba(34,197,94,.08), transparent 35%),
+                  var(--bg);
+      color: var(--text);
+      transition: background-color .25s ease, color .25s ease;
+    }
+    .container {
+      width: min(720px, 100%);
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(20px, 3.5vw, 28px);
+      letter-spacing: .02em;
+    }
+    .desc {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* ===== Progress ===== */
+    .kpis {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .remaining {
+      font-size: clamp(16px, 2.8vw, 18px);
+    }
+    .progress {
+      width: 100%;
+      background: var(--progress-track);
+      height: 24px;
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 14px 0 6px;
+      border: 1px solid var(--border);
+    }
+    .bar {
+      height: 100%;
+      background: var(--bar);
+      width: 0%;
+      transition: width 0.6s ease;
+      color: var(--bar-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ===== Buttons ===== */
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    button {
+      padding: 14px 18px;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform .05s ease, filter .2s ease, background-color .2s ease;
+      color: #ffffff;
+      user-select: none;
+    }
+    button:active { transform: translateY(1px); }
+    .btn-primary { background: var(--btn-bg); }
+    .btn-primary:hover { background: var(--btn-bg-hover); }
+    .btn-alt { background: var(--btn-alt-bg); }
+    .btn-alt:hover { background: var(--btn-alt-hover); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { filter: brightness(1.1); }
+
+    /* ===== Message ===== */
+    #message {
+      margin-top: 14px;
+      font-size: 15px;
+      min-height: 20px;
+      color: var(--text);
+    }
+    #message.warning {
+      color: var(--warning);
+      font-weight: 700;
+    }
+    small { color: var(--muted); }
+
+    /* ===== Accessibility ===== */
+    @media (prefers-reduced-motion: reduce) {
+      .bar { transition: none; }
+      button { transition: none; }
+    }
   </style>
 </head>
 <body>
-  <h1>部屋干しスーパークリーン</h1>
-  <p>残り: <strong><span id="remaining">読み込み中...</span></strong> 回</p>
-  <div class="progress">
-    <div class="bar" id="bar">0%</div>
-  </div>
-  <button id="download-btn">履歴をCSVでダウンロード</button>
-  <p><small>※1回の使用量: 22ml</small></p>
-  <div id="message" role="status" aria-live="polite"></div>
+  <main class="container" role="main" aria-labelledby="title">
+    <header>
+      <div>
+        <h1 id="title">部屋干しスーパークリーン</h1>
+        <p class="desc">自動で残量を記録し、しきい値で通知します。</p>
+      </div>
+      <div class="actions" style="margin:0">
+        <button id="theme-btn" class="btn-ghost" aria-pressed="false" aria-label="テーマ切替">🌙 ダーク</button>
+      </div>
+    </header>
+
+    <section class="kpis" aria-live="polite">
+      <div class="remaining">
+        残り: <strong><span id="remaining">読み込み中...</span></strong> 回
+      </div>
+      <div>
+        <button id="download-btn" class="btn-alt">履歴をCSVでダウンロード</button>
+      </div>
+    </section>
+
+    <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="残量進捗">
+      <div class="bar" id="bar" aria-live="polite">0%</div>
+    </div>
+
+    <div class="actions">
+      <!-- 任意: 手動で「1回使用」を記録したい場合はこのボタンを表示 -->
+      <button id="use-btn" class="btn-primary">1回使用（手動）</button>
+    </div>
+
+    <p><small>※1回の使用量: 22ml</small></p>
+    <div id="message" role="status" aria-live="polite"></div>
+  </main>
 
   <script>
     // ===== 設定 =====
@@ -37,7 +214,7 @@
     const MAX_USES_PER_DAY = 3;  // 1日最大使用回数
     const TOTAL_USES = 83;       // 全体の使用可能回数
 
-    // ===== Supabase クライアント =====
+    // ===== Supabase クライアント（REST）=====
     const client = axios.create({
       baseURL: `${SUPABASE_URL}/rest/v1`,
       headers: {
@@ -46,6 +223,22 @@
       },
       paramsSerializer: { indexes: null }
     });
+
+    // ===== テーマ切替 =====
+    const themeBtn = document.getElementById('theme-btn');
+    function applyThemeLabel() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      themeBtn.textContent = isDark ? '☀️ ライト' : '🌙 ダーク';
+      themeBtn.setAttribute('aria-pressed', String(isDark));
+    }
+    themeBtn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('theme', next);
+      applyThemeLabel();
+    });
+    applyThemeLabel();
 
     // ===== 今日の日付 (YYYY-MM-DD) =====
     function getToday() {
@@ -59,7 +252,7 @@
           params: {
             user_id: 'eq.' + UID,
             date: 'eq.' + getToday(),
-            select: 'uses_count'
+            select: 'id,uses_count'
           }
         });
         return res.data.length > 0 ? res.data[0].uses_count : 0;
@@ -74,10 +267,7 @@
       const today = getToday();
       try {
         const res = await client.get(`/daily_usage`, {
-          params: {
-            user_id: 'eq.' + UID,
-            date: 'eq.' + today
-          }
+          params: { user_id: 'eq.' + UID, date: 'eq.' + today, select: 'id,uses_count' }
         });
 
         if (res.data.length > 0) {
@@ -111,7 +301,7 @@
     // ===== 残り回数を取得・初期化 =====
     async function loadRemaining() {
       try {
-        const res = await client.get(`/detergent_usage?id=eq.${UID}`);
+        const res = await client.get(`/detergent_usage`, { params: { id: 'eq.' + UID } });
         if (res.data.length === 0) {
           // 初回ユーザー → 初期化
           await client.post(`/detergent_usage`, {
@@ -150,7 +340,7 @@
           params: {
             user_id: 'eq.' + UID,
             order: 'used_at.desc',
-            select: 'used_at, amount_ml'
+            select: 'used_at,amount_ml'
           }
         });
 
@@ -162,12 +352,8 @@
         let csv = "日時,使用量(ml)\n";
         res.data.forEach(log => {
           const date = new Date(log.used_at).toLocaleString('ja-JP', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
           }).replace(/\//g, '-');
           csv += `"${date}",${log.amount_ml}\n`;
         });
@@ -192,6 +378,7 @@
       const bar = document.getElementById("bar");
       bar.style.width = `${percent}%`;
       bar.textContent = `${Math.round(percent)}%`;
+      document.querySelector('.progress').setAttribute('aria-valuenow', String(Math.round(percent)));
 
       if (remaining <= 10) {
         showMessage(`⚠️ 残り${remaining}回です。補充をご検討ください。`, true);
@@ -221,7 +408,7 @@
       }
 
       const data = await loadRemaining();
-      const newUses = data.current_uses + 1;
+      const newUses = (data.current_uses || 0) + 1;
       const remaining = TOTAL_USES - newUses;
 
       // DB更新
@@ -267,13 +454,31 @@
 
     // ===== イベント登録 =====
     document.getElementById("download-btn").addEventListener("click", downloadCSV);
+    document.getElementById("use-btn").addEventListener("click", () => {
+      useDetergent().catch(e => {
+        console.error("使用処理失敗:", e);
+        showMessage("処理に失敗しました。", true);
+      });
+    });
 
     // ===== ページ読み込み時 =====
     window.addEventListener("load", () => {
-      useDetergent().catch(e => {
-        console.error("自動使用処理失敗:", e);
-        showMessage("処理に失敗しました。", true);
-      });
+      // 初回表示時に現在残量を反映（自動で1回消費したくない場合はコメントアウト）
+      loadRemaining()
+        .then(data => {
+          const remaining = TOTAL_USES - (data.current_uses || 0);
+          updateUI(remaining);
+        })
+        .catch(e => {
+          console.error("初期化失敗:", e);
+          showMessage("初期化に失敗しました。", true);
+        });
+
+      // もし従来どおり「ページ表示で1回分を自動消費」したい場合は以下を有効化
+      // useDetergent().catch(e => {
+      //   console.error("自動使用処理失敗:", e);
+      //   showMessage("処理に失敗しました。", true);
+      // });
     });
   </script>
 </body>
