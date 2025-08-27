@@ -442,7 +442,7 @@
             const minutes = Math.floor(totalSeconds / 60);
             const seconds = totalSeconds % 60;
             const formatted = `${String(minutes).padStart(2, '0')}分 ${String(seconds).padStart(2, '0')}秒`;
-            showMessage(`⚠️ クールタイム中です。あと ${formatted} お待ちください。`, true);
+            showMessage(`あと ${formatted} お待ちください。`, true);
           }
         };
 
