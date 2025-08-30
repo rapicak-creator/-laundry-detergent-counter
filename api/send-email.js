@@ -9,12 +9,12 @@ export default async function handler(req, res) {
 
   // HTMLメールの本文を作成します
   const emailHtml = `
-<!DOCTYPE html>
-<html lang="ja">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>洗剤の残量のお知らせ</title>
   <!--[if mso]>
   <noscript>
@@ -25,320 +25,401 @@ export default async function handler(req, res) {
     </xml>
   </noscript>
   <![endif]-->
-  <style>
-    :root {
-      --primary-50: #f0f9ff;
-      --primary-100: #e0f2fe;
-      --primary-500: #0ea5e9;
-      --primary-700: #0369a1;
-      --primary-900: #0c4a6e;
-      --neutral-50: #f8fafc;
-      --neutral-100: #f1f5f9;
-      --neutral-200: #e2e8f0;
-      --neutral-300: #cbd5e1;
-      --neutral-500: #64748b;
-      --neutral-700: #334155;
-      --neutral-900: #0f172a;
-      --semantic-success: #10b981;
-      --semantic-warning: #f59e0b;
-      --semantic-error: #ef4444;
-      --spacing-1: 0.25rem;
-      --spacing-2: 0.5rem;
-      --spacing-3: 0.75rem;
-      --spacing-4: 1rem;
-      --spacing-6: 1.5rem;
-      --spacing-8: 2rem;
-      --spacing-12: 3rem;
-      --text-xs: 0.75rem;
-      --text-sm: 0.875rem;
-      --text-base: 1rem;
-      --text-lg: 1.125rem;
-      --text-xl: 1.25rem;
-      --text-2xl: 1.5rem;
-      --text-3xl: 1.875rem;
+  <style type="text/css">
+    /* クライアント固有のスタイルリセット */
+    body, table, td, p, a, li, blockquote {
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
     }
     
-    /* リセットとベーススタイル */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    table, td {
+      mso-table-lspace: 0pt;
+      mso-table-rspace: 0pt;
     }
     
+    img {
+      -ms-interpolation-mode: bicubic;
+      border: 0;
+      height: auto;
+      line-height: 100%;
+      outline: none;
+      text-decoration: none;
+    }
+    
+    /* 基本スタイル */
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      font-family: 'Segoe UI', Arial, sans-serif;
       line-height: 1.6;
-      background-color: var(--neutral-50);
-      margin: 0;
-      padding: 0;
-      color: var(--neutral-700);
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
+      background-color: #f8fafc;
+      color: #334155;
+    }
+    
+    /* Outlookのための特別なスタイル */
+    .ExternalClass {
+      width: 100%;
+    }
+    
+    .ExternalClass,
+    .ExternalClass p,
+    .ExternalClass span,
+    .ExternalClass font,
+    .ExternalClass td,
+    .ExternalClass div {
+      line-height: 100%;
     }
     
     /* メインコンテナ */
-    .container {
+    .email-container {
       max-width: 600px;
-      margin: 20px auto;
+      margin: 0 auto;
+    }
+    
+    /* ユーティリティクラス */
+    .text-center {
+      text-align: center;
+    }
+    
+    .text-left {
+      text-align: left;
+    }
+    
+    .bg-white {
       background-color: #ffffff;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
     }
     
-    /* ヘッダー */
-    .header {
-      background: linear-gradient(135deg, var(--semantic-success), #2E7D32);
-      color: white;
-      text-align: center;
-      padding: var(--spacing-8) var(--spacing-4);
-      position: relative;
+    .bg-light {
+      background-color: #f1f5f9;
     }
     
-    .header__title {
-      font-size: var(--text-2xl);
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      margin: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: var(--spacing-2);
+    .bg-success {
+      background-color: #10b981;
     }
     
-    .header__icon {
-      font-size: 1.5em;
+    .bg-warning {
+      background-color: #f59e0b;
+    }
+    
+    .bg-error {
+      background-color: #ef4444;
+    }
+    
+    .text-white {
+      color: #ffffff;
+    }
+    
+    .text-dark {
+      color: #0f172a;
+    }
+    
+    .text-gray {
+      color: #64748b;
+    }
+    
+    .text-success {
+      color: #10b981;
+    }
+    
+    .text-warning {
+      color: #f59e0b;
+    }
+    
+    .text-error {
+      color: #ef4444;
+    }
+    
+    .text-primary {
+      color: #0ea5e9;
+    }
+    
+    .text-sm {
+      font-size: 14px;
+    }
+    
+    .text-base {
+      font-size: 16px;
+    }
+    
+    .text-lg {
+      font-size: 18px;
+    }
+    
+    .text-xl {
+      font-size: 20px;
+    }
+    
+    .text-2xl {
+      font-size: 24px;
+    }
+    
+    .text-3xl {
+      font-size: 30px;
+    }
+    
+    .text-4xl {
+      font-size: 36px;
+    }
+    
+    .font-bold {
+      font-weight: bold;
+    }
+    
+    .p-sm {
+      padding: 8px;
+    }
+    
+    .p-md {
+      padding: 16px;
+    }
+    
+    .p-lg {
+      padding: 24px;
+    }
+    
+    .py-sm {
+      padding-top: 8px;
+      padding-bottom: 8px;
+    }
+    
+    .py-md {
+      padding-top: 16px;
+      padding-bottom: 16px;
+    }
+    
+    .py-lg {
+      padding-top: 24px;
+      padding-bottom: 24px;
+    }
+    
+    .px-sm {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
+    
+    .px-md {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+    
+    .px-lg {
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+    
+    .mt-sm {
+      margin-top: 8px;
+    }
+    
+    .mt-md {
+      margin-top: 16px;
+    }
+    
+    .mt-lg {
+      margin-top: 24px;
+    }
+    
+    .mb-sm {
+      margin-bottom: 8px;
+    }
+    
+    .mb-md {
+      margin-bottom: 16px;
+    }
+    
+    .mb-lg {
+      margin-bottom: 24px;
+    }
+    
+    .border-bottom {
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .border-top {
+      border-top: 1px solid #e2e8f0;
+    }
+    
+    .border-left {
+      border-left: 4px solid;
+    }
+    
+    .rounded {
+      border-radius: 8px;
+    }
+    
+    .rounded-full {
+      border-radius: 9999px;
+    }
+    
+    .shadow {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    
+    /* ボタンスタイル */
+    .btn {
       display: inline-block;
-      vertical-align: middle;
+      padding: 12px 24px;
+      background-color: #0ea5e9;
+      color: #ffffff !important;
+      font-weight: bold;
+      text-decoration: none;
+      border-radius: 6px;
+      mso-padding-alt: 0;
+      text-underline-color: #0ea5e9;
     }
     
-    /* コンテンツエリア */
-    .content {
-      padding: var(--spacing-8) var(--spacing-6);
-      text-align: center;
+    /* Outlook用のボタン修正 */
+    .msoBtnFix {
+      border-collapse: separate;
+      mso-table-lspace: 0pt;
+      mso-table-rspace: 0pt;
+      width: 100%;
     }
     
-    .content__product {
-      font-size: var(--text-lg);
-      font-weight: 600;
-      color: var(--neutral-900);
-      margin-bottom: var(--spacing-4);
-      padding-bottom: var(--spacing-4);
-      border-bottom: 1px solid var(--neutral-200);
+    .msoBtnFix a {
+      border: 1px solid #0ea5e9;
     }
     
-    .content__product-name {
-      color: var(--primary-700);
-    }
-    
-    .content__status {
-      margin: var(--spacing-6) 0;
-    }
-    
-    .content__label {
-      font-size: var(--text-base);
-      color: var(--neutral-700);
-      margin-bottom: var(--spacing-2);
-    }
-    
-    /* 残量表示 */
-    .remaining {
-      position: relative;
-      margin: var(--spacing-6) auto;
+    /* 残量表示用の円形スタイル - テーブルベース */
+    .circle-container {
       width: 180px;
       height: 180px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      background: radial-gradient(circle, var(--neutral-50) 60%, var(--neutral-100) 100%);
-      border-radius: 50%;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), inset 0 2px 4px rgba(255, 255, 255, 0.9);
+      margin: 0 auto;
+      border-collapse: separate;
     }
     
-    .remaining__count {
-      font-size: 3.5rem;
-      font-weight: 700;
-      color: ${parseInt(remaining) <= 3 ? 'var(--semantic-error)' : (parseInt(remaining) <= 5 ? 'var(--semantic-warning)' : 'var(--semantic-success)')};
-      line-height: 1;
-      margin-bottom: var(--spacing-1);
-    }
-    
-    .remaining__unit {
-      font-size: var(--text-lg);
-      font-weight: 600;
-      color: var(--neutral-700);
-    }
-    
-    .remaining__note {
-      font-size: var(--text-xs);
-      color: var(--neutral-500);
-      margin-top: var(--spacing-2);
-    }
-    
-    /* メッセージ */
-    .message {
-      background-color: ${parseInt(remaining) <= 3 ? 'rgba(239, 68, 68, 0.08)' : (parseInt(remaining) <= 5 ? 'rgba(245, 158, 11, 0.08)' : 'rgba(16, 185, 129, 0.08)')};
-      border-left: 4px solid ${parseInt(remaining) <= 3 ? 'var(--semantic-error)' : (parseInt(remaining) <= 5 ? 'var(--semantic-warning)' : 'var(--semantic-success)')};
-      padding: var(--spacing-4);
-      margin: var(--spacing-6) 0;
+    /* メッセージボックス */
+    .message-box {
+      padding: 16px;
+      margin: 24px 0;
       text-align: left;
       border-radius: 4px;
     }
     
-    .message__text {
-      font-size: var(--text-base);
-      color: var(--neutral-700);
-      margin: 0;
-    }
-    
-    /* ボタン */
-    .button {
-      display: inline-block;
-      padding: var(--spacing-3) var(--spacing-6);
-      background-color: var(--primary-500);
-      color: white;
-      font-size: var(--text-base);
-      font-weight: 600;
-      text-decoration: none;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      transition: all 0.2s ease;
-      margin-top: var(--spacing-6);
-    }
-    
-    .button:hover {
-      background-color: var(--primary-700);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    }
-    
-    .button__icon {
-      margin-right: var(--spacing-2);
-    }
-    
-    /* フッター */
-    .footer {
-      text-align: center;
-      padding: var(--spacing-4);
-      font-size: var(--text-xs);
-      color: var(--neutral-500);
-      background-color: var(--neutral-100);
-      border-top: 1px solid var(--neutral-200);
-    }
-    
-    .footer__icon {
-      font-size: var(--text-xl);
-      color: var(--primary-500);
-      margin-bottom: var(--spacing-2);
-      display: block;
-    }
-    
-    /* ダークモード対応 */
-    @media (prefers-color-scheme: dark) {
-      body {
-        background-color: var(--neutral-900);
-      }
-      
-      .container {
-        background-color: var(--neutral-800);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-      }
-      
-      .content__product {
-        color: var(--neutral-100);
-        border-bottom-color: var(--neutral-700);
-      }
-      
-      .content__label {
-        color: var(--neutral-300);
-      }
-      
-      .remaining {
-        background: radial-gradient(circle, var(--neutral-800) 60%, var(--neutral-700) 100%);
-      }
-      
-      .remaining__unit {
-        color: var(--neutral-300);
-      }
-      
-      .message {
-        background-color: rgba(0, 0, 0, 0.2);
-      }
-      
-      .message__text {
-        color: var(--neutral-300);
-      }
-      
-      .footer {
-        background-color: var(--neutral-800);
-        border-top-color: var(--neutral-700);
-      }
-    }
-    
     /* レスポンシブ対応 */
-    @media only screen and (max-width: 480px) {
-      .container {
-        margin: 10px;
-        border-radius: 8px;
+    @media screen and (max-width: 480px) {
+      .email-container {
+        width: 100% !important;
       }
       
-      .header {
-        padding: var(--spacing-6) var(--spacing-4);
+      .stack-column,
+      .stack-column-center {
+        display: block !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        direction: ltr !important;
       }
       
-      .content {
-        padding: var(--spacing-6) var(--spacing-4);
+      .stack-column-center {
+        text-align: center !important;
       }
       
-      .remaining {
-        width: 150px;
-        height: 150px;
+      .circle-container {
+        width: 150px !important;
+        height: 150px !important;
       }
       
-      .remaining__count {
-        font-size: 3rem;
+      .text-4xl {
+        font-size: 32px !important;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <h1 class="header__title"><span class="header__icon">🧺</span> 洗剤の残量のお知らせ</h1>
-    </header>
-    
-    <main class="content">
-      <div class="content__product">
-        <span class="content__product-name">「部屋干しスーパークリーン」</span>の残量状況
-      </div>
+  <center style="width: 100%; background-color: #f8fafc; padding: 20px 0;">
+    <!-- メール全体のコンテナ -->
+    <div class="email-container">
+      <!-- ヘッダー -->
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; border-radius: 12px 12px 0 0; overflow: hidden;">
+        <tr>
+          <td class="bg-success text-white text-center p-lg" style="background: linear-gradient(135deg, #10b981, #2E7D32);">
+            <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 0.5px;">
+              <span style="font-size: 1.5em; vertical-align: middle;">🧺</span> 洗剤の残量のお知らせ
+            </h1>
+          </td>
+        </tr>
+      </table>
       
-      <div class="content__status">
-        <p class="content__label">現在の残り回数</p>
+      <!-- メインコンテンツ -->
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff;">
+        <!-- 製品情報 -->
+        <tr>
+          <td class="text-center p-lg border-bottom">
+            <p class="text-lg font-bold mb-md">
+              <span style="color: #0369a1;">「部屋干しスーパークリーン」</span>の残量状況
+            </p>
+          </td>
+        </tr>
         
-        <div class="remaining">
-          <div class="remaining__count">${remaining}</div>
-          <div class="remaining__unit">回分</div>
-          <div class="remaining__note">※1回の使用量：22ml</div>
-        </div>
-      </div>
+        <!-- 残量表示 -->
+        <tr>
+          <td class="text-center p-lg">
+            <p class="text-base mb-sm">現在の残り回数</p>
+            
+            <!-- 円形の残量表示 -->
+            <table class="circle-container" border="0" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border-radius: 50%;">
+              <tr>
+                <td class="text-center" style="height: 180px; vertical-align: middle;">
+                  <div>
+                    <p style="font-size: 56px; font-weight: 700; line-height: 1; margin: 0; color: ${parseInt(remaining) <= 3 ? '#ef4444' : (parseInt(remaining) <= 5 ? '#f59e0b' : '#10b981')}">
+                      ${remaining}
+                    </p>
+                    <p style="font-size: 18px; font-weight: 600; margin: 4px 0 0 0;">
+                      回分
+                    </p>
+                    <p style="font-size: 12px; color: #64748b; margin: 8px 0 0 0;">
+                      ※1回の使用量：22ml
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        
+        <!-- メッセージ -->
+        <tr>
+          <td class="p-lg">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" class="message-box" style="background-color: ${parseInt(remaining) <= 3 ? 'rgba(239, 68, 68, 0.08)' : (parseInt(remaining) <= 5 ? 'rgba(245, 158, 11, 0.08)' : 'rgba(16, 185, 129, 0.08)')}; border-left: 4px solid ${parseInt(remaining) <= 3 ? '#ef4444' : (parseInt(remaining) <= 5 ? '#f59e0b' : '#10b981')}">
+              <tr>
+                <td class="p-md">
+                  <p style="margin: 0;">
+                    ${parseInt(remaining) <= 3 ? '⚠️ 洗剤が残りわずかです。早めの補充をおすすめします。' : (parseInt(remaining) <= 5 ? '📝 そろそろ補充のタイミングです。次回のお買い物リストに加えましょう。' : '✓ まだ十分な量が残っています。')}
+                  </p>
+                </td>
+              </tr>
+            </table>
+            
+            <p class="text-center mt-md mb-lg">スムーズな洗濯ライフを続けるために、計画的な補充をおすすめします。</p>
+            
+            <!-- ボタン -->
+            <table border="0" cellpadding="0" cellspacing="0" class="msoBtnFix" style="margin: 0 auto;">
+              <tr>
+                <td class="text-center" style="border-radius: 6px;" bgcolor="#0ea5e9">
+                  <a href="https://laundry-detergent-counter.vercel.app/" class="btn" style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 16px; mso-height-rule: exactly; line-height: 1.5;">
+                    <span style="margin-right: 8px;">📊</span>在庫管理ページを開く
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
       
-      <div class="message">
-        <p class="message__text">${parseInt(remaining) <= 3 ? '⚠️ 洗剤が残りわずかです。早めの補充をおすすめします。' : (parseInt(remaining) <= 5 ? '📝 そろそろ補充のタイミングです。次回のお買い物リストに加えましょう。' : '✓ まだ十分な量が残っています。')}</p>
-      </div>
-      
-      <p>スムーズな洗濯ライフを続けるために、計画的な補充をおすすめします。</p>
-      
-      <a href="https://laundry-detergent-counter.vercel.app/" class="button">
-        <span class="button__icon">📊</span>在庫管理ページを開く
-      </a>
-    </main>
-    
-    <footer class="footer">
-      <span class="footer__icon">📧</span>
-      <p>これは自動送信メールです。ご不明な点がございましたら、返信しないでください。</p>
-    </footer>
-  </div>
+      <!-- フッター -->
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; border-radius: 0 0 12px 12px; overflow: hidden;">
+        <tr>
+          <td class="bg-light text-center p-md" style="border-top: 1px solid #e2e8f0;">
+            <p style="font-size: 20px; color: #0ea5e9; margin-bottom: 8px;">📧</p>
+            <p style="font-size: 12px; color: #64748b; margin: 0;">
+              これは自動送信メールです。ご不明な点がございましたら、返信しないでください。
+            </p>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </center>
 </body>
 </html>
   `;
