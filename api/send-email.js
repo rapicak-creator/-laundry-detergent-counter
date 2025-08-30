@@ -335,7 +335,7 @@ export default async function handler(req, res) {
         <tr>
           <td class="bg-success text-white text-center p-lg" style="background: linear-gradient(135deg, #10b981, #2E7D32);">
             <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 0.5px;">
-              <span style="font-size: 1.5em; vertical-align: middle;">🧺</span> 洗剤の残量のお知らせ
+              <span style="font-size: 1.5em; vertical-align: middle;"></span> 洗剤の残量のお知らせ
             </h1>
           </td>
         </tr>
@@ -433,6 +433,7 @@ export default async function handler(req, res) {
     res.status(500).json({ error });
   }
 }
+
 
 
 
