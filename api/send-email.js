@@ -397,7 +397,6 @@ export default async function handler(req, res) {
       <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; border-radius: 0 0 12px 12px; overflow: hidden;">
         <tr>
           <td class="bg-light text-center p-md" style="border-top: 1px solid #e2e8f0;">
-            <p style="font-size: 20px; color: #0ea5e9; margin-bottom: 8px;">📧</p>
             <p style="font-size: 12px; color: #64748b; margin: 0;">
               これは自動送信メールです。ご不明な点がございましたら、返信しないでください。
             </p>
@@ -434,6 +433,7 @@ export default async function handler(req, res) {
     res.status(500).json({ error });
   }
 }
+
 
 
 
