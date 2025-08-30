@@ -392,20 +392,6 @@ export default async function handler(req, res) {
             </table>
             
             <p class="text-center mt-md mb-lg">スムーズな洗濯ライフを続けるために、計画的な補充をおすすめします。</p>
-            
-            <!-- ボタン -->
-            <table border="0" cellpadding="0" cellspacing="0" class="msoBtnFix" style="margin: 0 auto;">
-              <tr>
-                <td class="text-center" style="border-radius: 6px;" bgcolor="#0ea5e9">
-                  <a href="https://laundry-detergent-counter.vercel.app/" class="btn" style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 16px; mso-height-rule: exactly; line-height: 1.5;">
-                    <span style="margin-right: 8px;">📊</span>在庫管理ページを開く
-                  </a>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
       
       <!-- フッター -->
       <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; border-radius: 0 0 12px 12px; overflow: hidden;">
@@ -448,6 +434,7 @@ export default async function handler(req, res) {
     res.status(500).json({ error });
   }
 }
+
 
 
 
